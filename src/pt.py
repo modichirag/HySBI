@@ -54,11 +54,24 @@ class NBPklin:
         Return interpolation function for linear power spectrum at sepcified cosmology. 
         Unspecified parameters are set to default parameters of the class instance.    
         """
-        if Omega0_m is None: Omega0_m = self.default_cosmo[0]
-        if Omega0_b is None: Omega0_b = self.default_cosmo[1]
-        if h is None: h = self.default_cosmo[2]
-        if n_s is None: n_s = self.default_cosmo[3]
-        if sigma_8 is None: sigma_8 = self.default_cosmo[4]
+        if type(Omega0_m) == np.ndarray:
+            raise TypeError("Expected scalar for Omega0_m, found array")
+
+        if Omega0_m is None: 
+            print(f'Omega0_m not sepcified, reset to default value : {self.default_cosmo[0]}')
+            Omega0_m = self.default_cosmo[0]
+        if Omega0_b is None: 
+            print(f'Omega0_b not sepcified, reset to default value : {self.default_cosmo[1]}')
+            Omega0_b = self.default_cosmo[1]
+        if h is None: 
+            print(f'h not sepcified, reset to default value : {self.default_cosmo[2]}')
+            h = self.default_cosmo[2]
+        if n_s is None: 
+            print(f'n_s not sepcified, reset to default value : {self.default_cosmo[3]}')
+            n_s = self.default_cosmo[3]
+        if sigma_8 is None: 
+            print(f'sigma_8 not sepcified, reset to default value : {self.default_cosmo[4]}')
+            sigma_8 = self.default_cosmo[4]
         
         Omega0_cdm = Omega0_m - Omega0_b
         cosmo = self.cosmo.clone(Omega0_cdm=Omega0_cdm, Omega0_b=Omega0_b, h=h, n_s=n_s)
@@ -103,6 +116,8 @@ class PkMatter:
         P13_pref = self.k_arr**3/(252.*(2.*np.pi)**2)*pkl(self.k_arr)
         integrand = self.r_arr**2*pkl(self.r_arr*self.k_arr[:,None])*self.P13_integ_rarr
         P13_raw = P13_pref*simps(integrand, self.r_arr)
+        if np.isnan(P13_raw).sum():
+            raise ValueError("NaN detected in P13_raw")
         P13 = InterpolatedUnivariateSpline(self.k_arr, P13_raw, ext='zeros')
         return P13
             
@@ -110,13 +125,24 @@ class PkMatter:
         
         mu_integral = np.sum(self.w_arr* pkl(self.k_arr[:,None,None]*self.psi_arr) *self.F_2d_r_mu_factor, axis=2)
         P22_raw = self.P22_pref * simps(self.r_arr**2* pkl(self.r_arr*self.k_arr[:,None])* mu_integral, self.r_arr, axis=1)
+        if np.isnan(P22_raw).sum():
+            raise ValueError("NaN detected in P22_raw")
         P22 = InterpolatedUnivariateSpline(self.k_arr, P22_raw, ext='zeros')
         return P22
     
     def pct(self, pkl):
-        
-        return lambda k,cs: -2.*cs*k**2*pkl(k)
 
+        return lambda k, cs: -2.*cs*k**2*pkl(k)
+
+    def interp(self, pkl, cs):
+
+        func = lambda k : pkl(k) + self.p13(pkl)(k) + self.p22(pkl)(k) + self.pct(pkl)(k, cs)
+        return func
         
 
+    def __call__(self, k, pkl, cs):
+
+        ptotal = self.interp(pkl, cs)(k) 
+
+        return ptotal
 
