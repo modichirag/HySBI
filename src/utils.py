@@ -9,8 +9,9 @@ import numdifftools as ndiff
 
 class BoltzNet(nn.Module):
 
-    def __init__(self, d_in=5, d_out=500, nhidden=1000, log_it=True, loc=0., scale=1.):
+    def __init__(self, k, d_in=5, d_out=500, nhidden=1000, log_it=True, loc=0., scale=1.):
         super().__init__()
+        self.kvals = k
         self.in_layer = nn.Linear(d_in, nhidden)
         self.hidden_layers0 = nn.Linear(nhidden, nhidden)
         self.hidden_layers1 = nn.Linear(nhidden, nhidden)
@@ -18,17 +19,33 @@ class BoltzNet(nn.Module):
         self.log_it = log_it
         self.loc = loc
         self.scale = scale
+        self.lower_bounds = np.array([0.1 , 0.03, 0.5, 0.8, 0.6 ])
+        self.upper_bounds =  np.array([0.5 , 0.07, 0.9 , 1.2 , 1.0 ])
+
+    def check_bounds(self, x):
+        inbounds  = (x >= self.lower_bounds) & (x <= self.upper_bounds)
+        for ip, p in enumerate(inbounds):
+            if not p: print(f"Parameter {ip} is not within prior range")
+
+        if inbounds.sum() == len(inbounds): 
+            return True
+        else:
+            return False
+
 
     def save_model(self, path):
         os.makedirs(path, exist_ok=True)
         torch.save(self.state_dict(), path+'/net')
         np.save(path+'/loc', self.loc)
         np.save(path+'/scale', self.scale)
+        np.save(path+'/k', self.kvals)
+
 
     def load_model(self, path):
         self.load_state_dict(torch.load(path+'/net'))
         self.loc = np.load(path+'/loc.npy')
         self.scale = np.load(path+'/scale.npy')
+        self.kvals = np.load(path+'/k.npy')
 
 
     def transform(self, x):
@@ -59,10 +76,19 @@ class BoltzNet(nn.Module):
         return x 
 
     def predict(self, x):
-
+        if type(x) == np.ndarray: 
+            x = torch.from_numpy(x.astype(np.float32))
         y = self.forward(x)
         y = self.inv_transform(y)
         return y
+
+    def interp(self, x):
+        if type(x) == np.ndarray: 
+            x = torch.from_numpy(x.astype(np.float32))
+        y = self.forward(x)
+        y = self.inv_transform(y)
+        pkl = InterpolatedUnivariateSpline(self.kvals, y, ext='zeros')
+        return pkl
 
 
 
