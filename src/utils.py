@@ -3,12 +3,13 @@ import os
 import torch
 from torch import nn
 from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.optimize import curve_fit
 import numdifftools as ndiff
 
 
 class BoltzNet(nn.Module):
 
-    def __init__(self, d_in=5, d_out=500, nhidden=500, log_it=True, loc=0., scale=1.):
+    def __init__(self, d_in=5, d_out=500, nhidden=1000, log_it=True, loc=0., scale=1.):
         super().__init__()
         self.in_layer = nn.Linear(d_in, nhidden)
         self.hidden_layers0 = nn.Linear(nhidden, nhidden)
@@ -65,7 +66,7 @@ class BoltzNet(nn.Module):
 
 
 
-def loginterp(x, y, yint = None, side = "both", lp = 1, rp = -1, err_order=4, verbose=True):
+def loginterp(x, y, yint = None, side = "both", lp = 1, rp = -1, err_order=4, verbose=True, fitline=False):
     """
     Interpolate (x,y) after extrapolating linearly on log-scale. 
     """
@@ -78,6 +79,14 @@ def loginterp(x, y, yint = None, side = "both", lp = 1, rp = -1, err_order=4, ve
         l = int(lp)
         r = int(rp)
 
+    # Extra smoothing the edges by fitting a straight line
+    if fitline:
+        line = lambda x, m, c : m*x + c
+        m, c = curve_fit(line, x[:2*lp], y[:2*lp], )[0]
+        y[:2*lp] = line(x[:2*lp], m, c)
+        m, c = curve_fit(line, x[2*rp:], y[2*rp:], )[0]
+        y[2*rp:] = line(x[2*rp:], m, c)
+    
     lneff = ndiff.Derivative(yint, order=err_order)(x[l])*x[l]/y[l]
     rneff = ndiff.Derivative(yint, order=err_order)(x[r])*x[r]/y[r]
     if verbose: print("log derivative on left and right edge : ", lneff, rneff)
