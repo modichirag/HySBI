@@ -1,0 +1,6 @@
+{
+    "d_in": 5,
+    "d_out": 500,
+    "nhidden": 1000,
+    "log_it": true
+}
