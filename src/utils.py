@@ -5,6 +5,7 @@ from torch import nn
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
 import numdifftools as ndiff
+import json
 
 
 class BoltzNet(nn.Module):
@@ -21,6 +22,11 @@ class BoltzNet(nn.Module):
         self.scale = scale
         self.lower_bounds = np.array([0.1 , 0.03, 0.5, 0.8, 0.6 ])
         self.upper_bounds =  np.array([0.5 , 0.07, 0.9 , 1.2 , 1.0 ])
+        self.input_params = {'d_in': d_in, 
+                            'd_out': d_out, 
+                            'nhidden': nhidden,
+                            'log_it': log_it
+                            }
 
     def check_bounds(self, x):
         inbounds  = (x >= self.lower_bounds) & (x <= self.upper_bounds)
@@ -33,12 +39,15 @@ class BoltzNet(nn.Module):
             return False
 
 
+
     def save_model(self, path):
         os.makedirs(path, exist_ok=True)
         torch.save(self.state_dict(), path+'/net')
         np.save(path+'/loc', self.loc)
         np.save(path+'/scale', self.scale)
         np.save(path+'/k', self.kvals)
+        with open(path+'/params.json', 'w', encoding='utf-8') as f:
+            json.dump(self.input_params, f, ensure_ascii=False, indent=4)
 
 
     def load_model(self, path):
