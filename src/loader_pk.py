@@ -93,3 +93,23 @@ def loader(args, return_k=False):
         return features, params
 
 
+
+def folder_path(cfgd, verbose=True):
+    cuts = cfgd['datacuts']
+    run = cfgd['analysis']
+    print(cuts.keys())
+    print(run.keys())
+    analysis_path = f"/mnt/ceph/users/cmodi/HySBI/matter/{run['alg']}/"
+    
+    #folder name is decided by data-cuts imposed
+    folder = ''
+    for key in sorted(cuts):
+        if cuts[key]:
+            if verbose: print("key-val pair : ", key, str(cuts[key]))
+            if type(cuts[key]) == bool: folder = folder + f"{key}"
+            else: folder = folder + f'{key}{cuts[key]}'
+            folder += '-'
+    folder = folder[:-1] + f"{run['suffix']}/"
+
+    return analysis_path + folder
+

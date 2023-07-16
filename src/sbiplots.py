@@ -8,8 +8,7 @@ import warnings
 import sys, os, errno
 #warnings.filterwarnings("error")
 
-cosmonames = r'$\Omega_m$,$\Omega_b$,$h$,$n_s$,$\sigma_8$'.split(",")
-cosmonames = cosmonames + ["Mcut", "sigma", "M0", "M1", "alpha"]
+cosmonames = r'$\Omega_m$,$\Omega_b$,$h$,$n_s$,$\sigma_8$,$c_s$'.split(",")
 
 ###
 def plot_ranks_histogram(ranks, nbins=10, npars=5, titles=None, savepath=None, figure=None, suffix=""):
