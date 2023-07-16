@@ -4,8 +4,8 @@ import torch
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
-from sbi.inference import SNPE, prepare_for_sbi, simulate_for_sbi
-from sbi.utils.get_nn_models import posterior_nn
+from sbi.inference import SNPE, SNLE_A #prepare_for_sbi, simulate_for_sbi
+from sbi.utils.get_nn_models import posterior_nn, likelihood_nn
 from sbi import utils
 import sbiplots
 import pickle
@@ -189,7 +189,7 @@ def load_inference(savepath):
 
 
 ###
-def sbi(trainx, trainy, prior, savepath=None, model_embed=torch.nn.Identity(),
+def sbi(trainx, trainy, prior, alg, savepath=None, model_embed=torch.nn.Identity(),
         model='maf', nhidden=32, nlayers=5, nblocks=2,
         batch_size=128, lr=0.0005,
         validation_fraction=0.2, 
@@ -209,16 +209,32 @@ def sbi(trainx, trainy, prior, savepath=None, model_embed=torch.nn.Identity(),
             print("##Exception##\n", e)
 
     print("Training a new NF")
-    density_estimator_build_fun = posterior_nn(model=model, \
+
+
+    
+    if alg == 'snpe':
+        density_estimator_build_fun = posterior_nn(model=model, \
                                                hidden_features=nhidden, \
                                                num_transforms=nlayers,
                                                num_blocks=nblocks,
                                                embedding_net=model_embed)
+        inference = SNPE(prior=prior, density_estimator=density_estimator_build_fun)    
+        
+    elif alg == 'snle':
+        density_estimator_build_fun = likelihood_nn(model=model, \
+                                               hidden_features=nhidden, \
+                                               num_transforms=nlayers,
+                                               num_blocks=nblocks,
+                                               embedding_net=model_embed)
+        inference = SNLE_A(prior=prior, density_estimator=density_estimator_build_fun)
+    else:
+        print('Algorithm should be either snpe or snle')
+        raise NotImplementedError
     
-    inference = SNPE(prior=prior, density_estimator=density_estimator_build_fun)
     inference.append_simulations(
-        torch.from_numpy(trainy.astype('float32')), 
-        torch.from_numpy(trainx.astype('float32')))
+        x = torch.from_numpy(trainx.astype('float32')), 
+        theta = torch.from_numpy(trainy.astype('float32')), 
+        )
     
     density_estimator = inference.train(training_batch_size=batch_size, 
                                         validation_fraction=validation_fraction, 
@@ -266,9 +282,10 @@ def analysis(cfgd, cfgm, features, params, verbose=True):
                 pickle.dump(scaler, handle)
 
     ### SBI
-    prior = sbi_prior(params.reshape(-1, params.shape[-1]), offset=0.2)
+    prior = sbi_prior(params.reshape(-1, params.shape[-1]), offset=cfgd.prior_offset)
     print("trainx and trainy shape : ", data.trainx.shape, data.trainy.shape)
     posterior, inference, summary = sbi(data.trainx, data.trainy, prior, \
+                                        alg = cfgd.alg,
                                         model=cfgm.model,
                                         nlayers=cfgm.ntransforms,
                                         nhidden=cfgm.nhidden,
@@ -285,31 +302,6 @@ def analysis(cfgd, cfgm, features, params, verbose=True):
 
     
 
-# #
-# def analysis(dataloader, args, savepath, model_embed=torch.nn.Identity()):
-#     features, params = dataloader()
-#     data = test_train_split(features, params, train_size_frac=0.8)
-
-#     ### Standaradize
-#     data.trainx, data.testx, scaler = standardize(data.trainx, secondary=data.testx, log_transform=True)
-#     with open(savepath + "scaler.pkl", "wb") as handle:
-#         pickle.dump(scaler, handle)
-
-#     #############
-#     ### SBI
-#     prior = sbi_prior(params.reshape(-1, params.shape[-1]), offset=0.1)
-#     posterior = sbi(data.trainx, data.trainy, prior, model_embed=model_embed, \
-#                                   model=args.model, nlayers=args.nlayers, \
-#                                   nhidden=args.nhidden, batch_size=args.batch, savepath=savepath)
-
-#     ### Diagnostics
-#     cosmonames = r'$\Omega_m$,$\Omega_b$,$h$,$n_s$,$\sigma_8$'.split(",")
-#     cosmonames = cosmonames + ["Mcut", "sigma", "M0", "M1", "alpha"]
-#     for _ in range(args.nposterior):
-#         ii = np.random.randint(0, data.testx.shape[0], 1)[0]
-#         savename = savepath + 'posterior%04d.png'%(data.tidx[1][ii//params.shape[1]])
-#         fig, ax = sbiplots.plot_posterior(data.testx[ii], data.testy[ii], posterior, titles=cosmonames, savename=savename)
-#     sbiplots.test_diagnostics(data.testx, data.testy, posterior, titles=cosmonames, savepath=savepath, test_frac=0.2, nsamples=500)
 
 
 
