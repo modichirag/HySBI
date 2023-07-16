@@ -1,6 +1,6 @@
 datacuts:
   kmax: 0.5
-  kmin: 0.001
+  kmin: 0.15
   logit: True
   standardize: True
   ampnorm: False
