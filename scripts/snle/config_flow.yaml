@@ -1,0 +1,9 @@
+---
+flow: 
+  model: maf
+  nhidden: 32
+  ntransforms: 5
+  lr: 1.e-3
+  batch: 64
+  nblocks: 2
+  retrain: False
