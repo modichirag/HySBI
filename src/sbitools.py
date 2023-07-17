@@ -1,16 +1,22 @@
 import numpy as np
-import torch
+import os
+import pickle
+import yaml
 
-from sklearn.model_selection import train_test_split
+# from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
+
+import torch
 
 from sbi.inference import SNPE, SNLE_A #prepare_for_sbi, simulate_for_sbi
 from sbi.utils.get_nn_models import posterior_nn, likelihood_nn
 from sbi import utils
-import sbiplots
-import pickle
 from collections import namedtuple
 import torch.optim as optim
+import yaml
+from wandb import Api
+
+api = Api()
 
 class Objectify(object):
     def __init__(self, *initial_data, **kwargs):
@@ -339,3 +345,55 @@ def embed_data(x, model, batch=256, device='cuda'):
         
     em = np.concatenate(em, axis=0)
     return em
+
+
+
+def insert_sweep_name(path):
+    if '%s' in path:
+        dirname = '/'.join(cfg_path.split('/')[:-2])
+    else:
+        dirname = path
+    print(f"In directory {dirname}")
+    for root, dirs, files in os.walk(dirname):
+        if len(dirs) > 1 :
+            print('More than 1 sweeps, abort!')
+            raise
+        break
+    print(f"Sweep found : {dirs[0]}")
+    if '%s' in path:
+        return path%dirs[0]
+    else:
+        return path + f'/{dirs[0]}/'
+
+
+def setup_sweepdict(analysis_path, verbose=False):
+
+    args = {}
+    args['analysis_path'] = analysis_path
+    cfg_path = insert_sweep_name(analysis_path)
+    # print(cfg_path)
+    cfg_dict = yaml.load(open(f'{cfg_path}/sweep_config.yaml'), Loader=yaml.Loader)
+    sweep_id = cfg_dict['sweep']['id']
+    for i in cfg_dict.keys():
+        args.update(**cfg_dict[i])
+    cfg = Objectify(**args)
+
+    sweep = api.sweep(f'modichirag92/hysbi/{sweep_id}')
+    #sort in the order of validation log prob
+    names, log_prob = [], []
+    for run in sweep.runs:
+        if run.state == 'finished':
+            # print(run.name, run.summary['best_validation_log_prob'])
+            try:
+                model_path = run.summary['output_directory']
+                names.append(run.name)
+                log_prob.append(run.summary['best_validation_log_prob'])
+            except Exception as e:
+                print('Exception in checking state of run : ', e)
+    idx = np.argsort(log_prob)[::-1]
+    names = np.array(names)[idx]
+
+    scaler = load_scaler(cfg.analysis_path)
+
+    toret = {'sweepid':sweep_id, 'cfg':cfg, 'idx':idx, 'scaler':scaler, 'names':names, 'cfg_dict':cfg_dict}
+    return toret

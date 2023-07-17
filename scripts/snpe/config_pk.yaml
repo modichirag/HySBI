@@ -11,4 +11,5 @@ analysis:
   train_fraction: 0.85
   validation_fraction: 0.06
   alg: snpe
+  prior_offset: 0.2
   suffix: ""
