@@ -20,7 +20,7 @@ nmodels = 1
 #save config file in sweep folder
 analysis_path = loader.folder_path(cfgd)
 model_path = f'{analysis_path}/{sweep_id}/'
-config_path = f'{model_path}/sweep_config'
+config_path = f'{model_path}/sweep_config.yaml'
 command = f"time python -u run_wandb.py {config_path} {nmodels}"
  
 os.makedirs(model_path, exist_ok=True)

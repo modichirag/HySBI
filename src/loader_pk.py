@@ -97,8 +97,6 @@ def loader(args, return_k=False):
 def folder_path(cfgd, verbose=True):
     cuts = cfgd['datacuts']
     run = cfgd['analysis']
-    print(cuts.keys())
-    print(run.keys())
     analysis_path = f"/mnt/ceph/users/cmodi/HySBI/matter/{run['alg']}/"
     
     #folder name is decided by data-cuts imposed

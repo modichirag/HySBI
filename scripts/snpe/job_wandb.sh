@@ -3,7 +3,7 @@
 #SBATCH -n 4
 #SBATCH --partition=ccm
 #SBATCH -C skylake
-#SBATCH --time=6:00:00
+#SBATCH --time=4:00:00
 #SBATCH --job-name=snpe
 #SBATCH -o ../logs/%x.o%j
 
