@@ -15,8 +15,10 @@ isim = int(sys.argv[1])
 # cfg_path = int(sys.argv[2])
 # cfg_path = "/mnt/ceph/users/cmodi/HySBI/matter/snle/kmax0.5-kmin0.001-logit-standardize//"
 cfg_path = "/mnt/ceph/users/cmodi/HySBI/matter/networks/snle/kmax0.15-kmin0.001-logit-standardize//"
-save_path = cfg_path.replace('networks', 'samples') + '/emcee_chains/'
+save_path = cfg_path.replace('networks/snle/', 'samples/snle/emcee_chains/')
 os.makedirs(save_path, exist_ok=True)
+print("samples will be saved at : ", save_path)
+
 
 nposterior = 5
 nsteps, nwalkers, ndim = 10000, 20, 5
@@ -32,6 +34,7 @@ if sweepdict['scaler'] is not None:
 
 
 # get log prob
+prior = sbitools.sbi_prior(params, offset=0.01)
 sweepid = sweepdict['sweepid']    
 posteriors = []
 for j in range(nposterior):
@@ -41,7 +44,6 @@ for j in range(nposterior):
 
 
 def log_prob(theta, x):
-    # theta = torch.from_numpy(theta.reshape(1, -1).astype(np.float32))
     batch = theta.shape[0]
     x = torch.from_numpy(np.array([x]*batch).astype(np.float32).reshape(batch, x.shape[-1]))
     theta = torch.from_numpy(theta.astype(np.float32))
@@ -49,14 +51,13 @@ def log_prob(theta, x):
     for p in posteriors:
         lp += p.potential_fn.likelihood_estimator.log_prob(x, theta)
     lp /= nposterior
-    lp += p.potential_fn.prior.log_prob(theta)
+    lp += prior.log_prob(theta)
     lp = lp.detach().numpy()
     return lp
 
 
 # Initialize and sample
 np.random.seed(42)
-prior = sbitools.sbi_prior(params, offset=0.)
 theta0 = np.stack([prior.sample() for i in range(nwalkers)])
 print(theta0.shape)
 print(f"Log prob at initialization : ", log_prob(theta0[0:1], x))
