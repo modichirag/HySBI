@@ -1,7 +1,7 @@
 import numpy as np
 import sys, time
 
-sys.path.append('../src/')
+sys.path.append('../../src/')
 import pt, sbitools, loader_pk
 from utils import BoltzNet
 

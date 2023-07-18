@@ -1,7 +1,7 @@
 import numpy as np
 import sys, time
 import os
-# os.environ["OMP_NUM_THREADS"] = "1"
+import argparse
 
 sys.path.append('../../src/')
 import sbitools, loader_pk
@@ -9,20 +9,37 @@ import sbitools, loader_pk
 import emcee, zeus
 import torch
 
-
-
-isim = int(sys.argv[1])
-# cfg_path = int(sys.argv[2])
-# cfg_path = "/mnt/ceph/users/cmodi/HySBI/matter/snle/kmax0.5-kmin0.001-logit-standardize//"
-cfg_path = "/mnt/ceph/users/cmodi/HySBI/matter/networks/snle/kmax0.15-kmin0.001-logit-standardize//"
-save_path = cfg_path.replace('networks/snle/', 'samples/snle/emcee_chains/')
-os.makedirs(save_path, exist_ok=True)
-print("samples will be saved at : ", save_path)
-
+parser = argparse.ArgumentParser(description='Arguments for simulations to run')
+parser.add_argument('--isim', type=int, help='Simulation number to run')
+parser.add_argument('--testsims', default=False, action='store_true')
+parser.add_argument('--no-testsims', dest='testsims', action='store_false')
+parser.add_argument('--cfgfolder', type=str, help='folder of the sweep')
+args = parser.parse_args()
+print(args)
 
 nposterior = 5
 nsteps, nwalkers, ndim = 10000, 20, 5
 burn_in, thin = nsteps//10, 10
+
+## Parse arguments
+if args.testsims:
+    testidx = np.load('/mnt/ceph/users/cmodi/HySBI/test-train-splits/test-N2000-f0.15-S0.npy')
+    isim = testidx[args.isim]
+else:
+    isim = args.isim
+
+
+# Setup paths
+print(f"Sample for LH {isim}")
+base_path = "/mnt/ceph/users/cmodi/HySBI/matter/networks/snle/"
+cfg_path = f"{base_path}/{args.cfgfolder}/"
+if not os.path.isdir(cfg_path):
+    print(f'Configuration folder does not exist at path {cfg_path}.\nCheck cfgfolder argument')
+    sys.exit()
+save_path = cfg_path.replace('networks/snle/', 'samples/snle/emcee_chains/')
+os.makedirs(save_path, exist_ok=True)
+print("samples will be saved at : ", save_path)
+
 
 # get sweepdict and data
 sweepdict = sbitools.setup_sweepdict(cfg_path)
@@ -61,6 +78,7 @@ np.random.seed(42)
 theta0 = np.stack([prior.sample() for i in range(nwalkers)])
 print(theta0.shape)
 print(f"Log prob at initialization : ", log_prob(theta0[0:4], x))
+
 
 # Run it for emcee
 print('emcee it')

@@ -15,7 +15,6 @@ module load modules/2.0-20220630
 module load gcc/7.5.0 openmpi/1.10.7
 module load cuda cudnn
 source activate ptorch
-cd ..
 
 i0=$1
 i1=$(($i0+500))

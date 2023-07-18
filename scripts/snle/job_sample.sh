@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -p ccm
 #SBATCH -C skylake
-#SBATCH --time=12:00:00
+#SBATCH --time=4:00:00
 #SBATCH -N 1
 #SBATCH --job-name=sp_snle
 #SBATCH -o ../logs/%x.o%j
@@ -15,18 +15,15 @@ module load gcc/7.5.0 openmpi/1.10.7
 source activate ptorch
 
 i0=$1
-i1=$(($i0+200))
-
-# time python -u sampler_pt.py $i0
-
-
+i1=$2
 echo $i0 $i1
+
+cfgfolder="kmax0.5-kmin0.15-logit-standardize"
+
+# time python -u sample_sweep.py  --isim $i0  --testsims --cfgfolder $cfgfolder
+
 for((i=${i0} ; i<=${i1} ; i+=1))
 do
     echo $i    
-    time python -u sample_sweep.py $i  
+    time python -u sample_sweep.py --isim $i  --testsims --cfgfolder $cfgfolder
 done    
-
-# wait
-
-    
