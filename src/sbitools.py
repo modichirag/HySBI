@@ -34,7 +34,7 @@ def quijote_params():
     return params, params_fid, cosmonames
 
 ###
-def sbi_prior(params, offset=0.25):
+def sbi_prior(params, offset=0.25, device='cpu'):
     '''
     Generate priors for parameters of the simulation set with offset from min and max value
     '''
@@ -42,7 +42,7 @@ def sbi_prior(params, offset=0.25):
                                       .1 * np.round(10 * params.max(0)) * (1+offset)
     lower_bound, upper_bound = (torch.from_numpy(lower_bound.astype('float32')), 
                                 torch.from_numpy(upper_bound.astype('float32')))
-    prior = utils.BoxUniform(lower_bound, upper_bound)
+    prior = utils.BoxUniform(lower_bound, upper_bound, device=device)
     return prior
 
 

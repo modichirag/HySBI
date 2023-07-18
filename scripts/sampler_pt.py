@@ -62,7 +62,7 @@ def log_prob(x, data, kdata, cov):
 
 
 # Inference
-nsteps, nwalkers, ndim = 10000, 20, 6
+nsteps, nwalkers, ndim = 100, 20, 6
 burn_in, thin = nsteps//10, 10
 
 # generate initial points
@@ -81,7 +81,7 @@ print(f"Log prob at initialization : ", log_prob(x0[0], data, kdata, cov))
 # sampler = zeus.EnsembleSampler(nwalkers, ndim, log_prob, args=[data, kdata, cov])
 # sampler.run_mcmc(x0, nsteps + burn_in)
 # chain = sampler.get_chain(flat=False, discard=burn_in, thin=thin)
-# np.save(f"/mnt/ceph/users/cmodi/HySBI/matter/PT/zeus_chains/LH{isim}_kmax{kmax}", chain)
+# np.save(f"/mnt/ceph/users/cmodi/HySBI/matter/samples/PT/zeus_chains/LH{isim}_kmax{kmax}", chain)
 
 # Run it for emcee
 start = time.time()
@@ -89,6 +89,6 @@ print('emcee it')
 sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob, args=[data, kdata, cov])
 sampler.run_mcmc(x0, nsteps + burn_in, progress=True)
 chain = sampler.get_chain(flat=False, discard=burn_in, thin=thin)
-np.save(f"/mnt/ceph/users/cmodi/HySBI/matter/PT/emcee_chains/LH{isim}_kmax{kmax}", chain)
+#np.save(f"/mnt/ceph/users/cmodi/HySBI/matter/samples/PT/emcee_chains/LH{isim}_kmax{kmax}", chain)
 print("Time taken : ", time.time()-start)
 
