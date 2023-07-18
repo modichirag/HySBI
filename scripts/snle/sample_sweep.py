@@ -34,7 +34,7 @@ if sweepdict['scaler'] is not None:
 
 
 # get log prob
-prior = sbitools.sbi_prior(params, offset=0.01)
+prior = sbitools.sbi_prior(params, offset=0., round=False)
 sweepid = sweepdict['sweepid']    
 posteriors = []
 for j in range(nposterior):
@@ -60,7 +60,7 @@ def log_prob(theta, x):
 np.random.seed(42)
 theta0 = np.stack([prior.sample() for i in range(nwalkers)])
 print(theta0.shape)
-print(f"Log prob at initialization : ", log_prob(theta0[0:1], x))
+print(f"Log prob at initialization : ", log_prob(theta0[0:4], x))
 
 # Run it for emcee
 print('emcee it')

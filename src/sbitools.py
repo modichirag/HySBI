@@ -34,12 +34,16 @@ def quijote_params():
     return params, params_fid, cosmonames
 
 ###
-def sbi_prior(params, offset=0.25, device='cpu'):
+def sbi_prior(params, offset=0.25, device='cpu', round=True):
     '''
     Generate priors for parameters of the simulation set with offset from min and max value
     '''
-    lower_bound, upper_bound = .1 * np.round(10 * params.min(0)) * (1-offset),\
+    if round:
+        lower_bound, upper_bound = .1 * np.round(10 * params.min(0)) * (1-offset),\
                                       .1 * np.round(10 * params.max(0)) * (1+offset)
+    else:
+        lower_bound, upper_bound = params.min(axis=0) * (1-offset),\
+                                      params.max(axis=0) * (1+offset)
     lower_bound, upper_bound = (torch.from_numpy(lower_bound.astype('float32')), 
                                 torch.from_numpy(upper_bound.astype('float32')))
     prior = utils.BoxUniform(lower_bound, upper_bound, device=device)
