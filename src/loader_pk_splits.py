@@ -45,22 +45,24 @@ def normalize_amplitude(args, pk, verbose=True):
 
 
 
+def process_pk(args, k, pk, verbose=True):
+    #Offset here
+    pk, offset = add_offset(args, pk, verbose=verbose)
+    #k cut
+    k, pk = k_cuts(args, pk, k, verbose=verbose)
+    # Normalize at large sacles
+    pk = normalize_amplitude(args, pk, verbose=verbose)
+
+    return k, pk, offset
+
+
 def lh_features(args, verbose=True):
     pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
     k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")
     pk = pk[:, :args.nsubs]
     print("Loaded power spectrum data with shape : ", pk.shape)
-    
-    #Offset here
-    pk, offset = add_offset(args, pk, verbose=verbose)
 
-    #k cut
-    k, pk = k_cuts(args, pk, k, verbose=verbose)
-
-    # Normalize at large sacles
-    pk = normalize_amplitude(args, pk, verbose=verbose)
-    
-    return k, pk, offset
+    return process_pk(args, k, pk, verbose)
 
 
 

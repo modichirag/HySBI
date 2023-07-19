@@ -49,6 +49,14 @@ def sbi_prior(params, offset=0.25, device='cpu', round=True):
     prior = utils.BoxUniform(lower_bound, upper_bound, device=device)
     return prior
 
+###
+def quijote_prior(offset=0.25, device='cpu', round=True):
+    '''
+    Generate priors for parameters of the simulation set with offset from min and max value
+    '''
+    params = quijote_params()[0]
+    return sbi_prior(params, offset, device, round)
+
 
 ###
 # def test_train_split(x, y, train_size_frac=0.8, random_state=0, reshape=True):
