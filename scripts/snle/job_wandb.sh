@@ -3,7 +3,7 @@
 #SBATCH -n 4
 #SBATCH --partition=ccm
 #SBATCH -C skylake
-#SBATCH --time=8:00:00
+#SBATCH --time=4:00:00
 #SBATCH --job-name=snle
 #SBATCH -o ../logs/%x.o%j
 
@@ -22,6 +22,6 @@ N_JOB=$SLURM_NTASKS                # create as many jobs as tasks
 echo $N_JOB
 
 config_data=$1
-nmodels=40
+nmodels=20
 
 time mpirun -n ${N_JOB} python -u run_wandb.py ${config_data} ${nmodels} 

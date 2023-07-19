@@ -3,7 +3,7 @@ import sys, os
 import wandb
 from ruamel import yaml
 sys.path.append('../../src/')
-import loader_pk as loader
+import loader_pk, loader_pk_splits
 wandb.login()
 
 config_data = sys.argv[1]
@@ -18,6 +18,10 @@ cfgd['sweep'] = {'id' : sweep_id}
 nmodels = 1
 
 #save config file in sweep folder
+if 'splits' in config_data: 
+    loader = loader_pk_splits
+else:
+    loader  = loader_pk
 analysis_path = loader.folder_path(cfgd)
 model_path = f'{analysis_path}/{sweep_id}/'
 config_path = f'{model_path}/sweep_config.yaml'

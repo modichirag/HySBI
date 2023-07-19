@@ -4,7 +4,7 @@ sys.path.append('../../src/')
 import sbitools, sbiplots
 import argparse
 import pickle, json
-import loader_pk as loader
+import loader_pk, loader_pk_splits
 import yaml
 
 
@@ -22,6 +22,10 @@ cfgd = sbitools.Objectify(**args)
 np.random.seed(cfgd.seed)
 
 print(cfgd_dict)
+if 'splits' in cfg_data: 
+    loader = loader_pk_splits
+else:
+    loader  = loader_pk
 
 #
 analysis_path = loader.folder_path(cfgd_dict)
@@ -40,12 +44,12 @@ kdata, features, params = loader.loader(cfgd, return_k=True)
 print("features and params shapes : ", features.shape, params.shape)
 data, posterior, inference, summary = sbitools.analysis(cfgd, cfgm, features, params)
 
-ndiagnostics = 5
+ndiagnostics = 1
 print("Diagnostics for test dataset")
 for i in range(ndiagnostics):
-    fig, ax = sbiplots.plot_posterior(data.testx[i], data.testy[i], posterior, savename=f'{cfgm.model_path}/corner{i}.png')
+    fig, ax = sbiplots.plot_posterior(data.testx[i], data.testy[i], posterior, nsamples=500, savename=f'{cfgm.model_path}/corner{i}.png')
 
 
 print("Diagnostics for training dataset")
 for i in range(ndiagnostics):
-    fig, ax = sbiplots.plot_posterior(data.testx[i], data.testy[i], posterior, savename=f'{cfgm.model_path}/corner-train{i}.png')
+    fig, ax = sbiplots.plot_posterior(data.testx[i], data.testy[i], posterior, nsamples=500, savename=f'{cfgm.model_path}/corner-train{i}.png')

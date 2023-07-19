@@ -2,8 +2,8 @@ import numpy as np
 #import matplotlib.pyplot as plt
 import sys, os
 sys.path.append('../../src/')
-import sbitools, sbiplots
-import loader_pk as loader
+import sbitools
+import loader_pk, loader_pk_splits
 import wandb
 import yaml
 
@@ -21,6 +21,12 @@ for i in cfgd_dict.keys():
 cfgd = sbitools.Objectify(**args)
 
 #
+if 'splits' in config_data: 
+    loader = loader_pk_splits
+else:
+    loader  = loader_pk
+
+
 cfgd.analysis_path = loader.folder_path(cfgd_dict)
 cfgd.model_path = cfgd.analysis_path + f'/{sweep_id}/'
 os.makedirs(cfgd.model_path, exist_ok=True)
