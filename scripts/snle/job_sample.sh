@@ -19,9 +19,9 @@ i1=$2
 echo $i0 $i1
 
 cfgfolder="kmax0.5-kmin0.15-logit-standardize"
+# cfgfolder="kmax0.5-kmin0.15-logit-nsubs1-splits4-standardize"
 
 # time python -u sample_sweep.py  --isim $i0  --testsims --cfgfolder $cfgfolder
-
 for((i=${i0} ; i<=${i1} ; i+=1))
 do
     echo $i    
