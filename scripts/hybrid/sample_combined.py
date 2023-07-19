@@ -57,7 +57,8 @@ print("\nloading sweep")
 sweepdict = sbitools.setup_sweepdict(cfg_path)
 
 
-# load data
+################################################
+# load and process data
 pk = np.load(f'{data_path}/pkmatter_quijote.npy')[isim, :, 1].reshape(1, -1)
 k =  np.load(f'{data_path}/kmatter_quijote.npy')
 # params = np.load(f'{data_path}/params_quijote_lh.npy')[isim]
@@ -84,21 +85,10 @@ for j in range(nposterior):
     model_path = f"{sweepdict['cfg'].analysis_path}/{sweepid}/{name}/"
     posteriors.append(sbitools.load_posterior(model_path))
 
-print()
-# print(k)
-# print(klarge.shape)
-# print(ksmall.shape)
-# print()
-# print('pk')
-# print(pk)
-# print(pk_large)
-# print(pk_small)
-# print(pk_small_processed)
 
 
-
+################################################
 # log probability
-# priors = (list(model.lower_bounds) + [-5], list(model.upper_bounds) + [5])
 prior_cs = [-5, 5]
 
 def log_prob_small(theta, data):
@@ -112,29 +102,6 @@ def log_prob_small(theta, data):
     lp = lp.detach().numpy()
     return lp
 
-
-# def log_prob_large(theta, data, kdata, cov):
-#     cp, cs = theta[:-1], theta[-1]
-#     try:
-#         pklin = model.interp(cp)
-#         pct = pkmatter.pct(pklin)(kdata, cs)
-#         p1loop = modelspt.interp(cp)(kdata)
-#         pred = p1loop + pct
-#         chisq = (pred - data)**2/cov
-#         lk = -0.5 * np.sum(chisq)
-#         #prior only on cs
-#         if (cs < prior_cs[0]) or (cs > prior_cs[1]):
-#             lpr = -np.inf
-#         else:
-#             lpr = 0 
-#         # logprob
-#         lp = lpr + lk
-#         if np.isnan(lp):
-#             raise ValueError("log prob is NaN")
-#     except Exception as e:
-#         print(e)
-#         lp = -np.inf
-#     return lp
 
 def log_prob_large_vec(theta, data, kdata, cov):
     cp, cs = theta[:, :-1], theta[:, -1]
@@ -162,7 +129,6 @@ def log_prob(theta, params_large, params_small):
     lk_large = log_prob_large_vec(theta, data_large, kdata, cov)
     lk_small = log_prob_small(cp, data_small)
     lpr = prior.log_prob(cp).detach().numpy()
-    print(lk_large.shape, lk_small.shape, lpr.shape)
     lp = lk_large + lk_small + lpr
     return lp
 
@@ -178,19 +144,6 @@ print("initial sample shape : ", theta0.shape)
 print(f"Log prob at initialization : ", log_prob(theta0, params_large, params_small))
 print()
 
-print(f"Log prob large1: ")
-
-# start = time.time()
-# for _ in range(100):
-#     for theta in theta0:
-#         (log_prob_large(theta, *params_large))
-# print("Time taken : ", time.time()-start)
-
-# start = time.time()
-# print(f"Log prob large2: ")
-# for _ in range(100):
-#     (log_prob_large_vec(theta0, *params_large))
-# print("Time taken : ", time.time()-start)
 
 
 # Run it for emcee
