@@ -6,19 +6,32 @@ import pt, sbitools, loader_pk
 from utils import BoltzNet
 
 import zeus, emcee
-import torch
+
+
+isim = int(sys.argv[1])
+testsim = bool(sys.argv[2])
+
+nsteps, nwalkers, ndim = 10000, 20, 6
+burn_in, thin = nsteps//10, 10
+
+## Parse arguments
+if testsim:
+    testidx = np.load('/mnt/ceph/users/cmodi/HySBI/test-train-splits/test-N2000-f0.15-S0.npy')
+    isim = testidx[isim]
+else:
+    pass
+print(f"Sample for LH {isim}")
+
 
 # load PT objects
+data_path = '../../data/'
 pklinfunc_nb = pt.NBPklin()
 pkmatter = pt.PkMatter()
 # load NN models
 model = BoltzNet(None, d_in=5, d_out=500, nhidden=1000, log_it=True)
-model.load_model('../data/boltznet/ep3k/')
+model.load_model(f'{data_path}/boltznet/ep3k/')
 modelspt = BoltzNet(k=None, d_in=5, d_out=120, nhidden=500, log_it=False)
-modelspt.load_model('../data/sptnet/ep3k/')
-
-isim = int(sys.argv[1])
-print(f"Run analysis for LH {isim}")
+modelspt.load_model(f'{data_path}/sptnet/ep3k/')
 
 
 # specify fake observed data
@@ -28,8 +41,8 @@ args = sbitools.Objectify(args)
 kcut, features, params = loader_pk.loader(args, return_k=True)
 
 data = features[isim].copy()
-kdata = np.load('../data/kmatter_quijote.npy')[1:data.size+1]
-cov = np.load('../data/cov_disconnected_cs1_quijote.npy')[1:data.size+1]
+kdata = np.load(f'{data_path}/kmatter_quijote.npy')[1:data.size+1]
+cov = np.load(f'{data_path}/cov_disconnected_cs1_quijote.npy')[1:data.size+1]
 
 # log probability
 priors = (list(model.lower_bounds) + [-5], list(model.upper_bounds) + [5])
@@ -60,11 +73,6 @@ def log_prob(x, data, kdata, cov):
     return lp
 
 
-
-# Inference
-nsteps, nwalkers, ndim = 100, 20, 6
-burn_in, thin = nsteps//10, 10
-
 # generate initial points
 np.random.seed(42)
 x0 = []
@@ -89,6 +97,5 @@ print('emcee it')
 sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob, args=[data, kdata, cov])
 sampler.run_mcmc(x0, nsteps + burn_in, progress=True)
 chain = sampler.get_chain(flat=False, discard=burn_in, thin=thin)
-#np.save(f"/mnt/ceph/users/cmodi/HySBI/matter/samples/PT/emcee_chains/LH{isim}_kmax{kmax}", chain)
+np.save(f"/mnt/ceph/users/cmodi/HySBI/matter/samples/PT/emcee_chains/LH{isim}_kmax{kmax}", chain)
 print("Time taken : ", time.time()-start)
-
