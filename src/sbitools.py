@@ -192,9 +192,8 @@ def save_inference(inference, savepath):
     with open(savepath + "inference.pkl", "wb") as handle:
         pickle.dump(inference, handle)
 
-
-def load_scaler(savepath):
-    with open(savepath + "scaler.pkl", "rb") as handle:
+def load_scaler(savepath, fname="scaler.pkl"):
+    with open(savepath + fname, "rb") as handle:
         return pickle.load(handle)
 
 def load_posterior(savepath):
@@ -231,6 +230,7 @@ def sbi(trainx, trainy, prior, alg, savepath=None, model_embed=torch.nn.Identity
 
     
     if alg == 'snpe':
+        print("With algorithm SNPE")
         density_estimator_build_fun = posterior_nn(model=model, \
                                                hidden_features=nhidden, \
                                                num_transforms=nlayers,
@@ -239,6 +239,7 @@ def sbi(trainx, trainy, prior, alg, savepath=None, model_embed=torch.nn.Identity
         inference = SNPE(prior=prior, density_estimator=density_estimator_build_fun)    
         
     elif alg == 'snle':
+        print("With algorithm SNLE")
         density_estimator_build_fun = likelihood_nn(model=model, \
                                                hidden_features=nhidden, \
                                                num_transforms=nlayers,
