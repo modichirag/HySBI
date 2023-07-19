@@ -19,7 +19,7 @@ args = parser.parse_args()
 print()
 
 nposterior = 5
-nsteps, nwalkers, ndim = 100, 20, 6
+nsteps, nwalkers, ndim = 10000, 20, 6
 burn_in, thin = nsteps//10, 10
 
 
@@ -38,7 +38,7 @@ cfg_path = f"{base_path}/{args.cfgfolder}/"
 if not os.path.isdir(cfg_path):
     print(f'Configuration folder does not exist at path {cfg_path}.\nCheck cfgfolder argument')
     sys.exit()
-save_path = cfg_path.replace('networks/snle/', 'samples/hybrid/emcee_chains/')
+save_path = cfg_path.replace('networks/snle/', 'samples/hybrid_independent/emcee_chains/')
 os.makedirs(save_path, exist_ok=True)
 print("samples will be saved at : ", save_path)
 
@@ -154,4 +154,4 @@ sampler.run_mcmc(theta0, nsteps + burn_in, progress=True)
 print("Time taken : ", time.time()-start)
 chain = sampler.get_chain(flat=False, discard=burn_in, thin=thin)
 print(chain.shape)
-# np.save(f"{save_path}/LH{isim}", chain)
+np.save(f"{save_path}/LH{isim}", chain)
