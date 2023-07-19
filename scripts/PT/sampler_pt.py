@@ -42,7 +42,7 @@ kcut, features, params = loader_pk.loader(args, return_k=True)
 
 data = features[isim].copy()
 kdata = np.load(f'{data_path}/kmatter_quijote.npy')[1:data.size+1]
-cov = np.load(f'{data_path}/cov_disconnected_cs1_quijote.npy')[1:data.size+1]
+cov = np.load(f'{data_path}/cov_disconnected_cs1_quijote.npy')[1:data.size+1, 1]
 
 # log probability
 priors = (list(model.lower_bounds) + [-5], list(model.upper_bounds) + [5])
