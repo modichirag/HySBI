@@ -96,7 +96,10 @@ class BoltzNet(nn.Module):
             x = torch.from_numpy(x.astype(np.float32))
         y = self.forward(x)
         y = self.inv_transform(y)
-        pkl = InterpolatedUnivariateSpline(self.kvals, y, ext='zeros')
+        if len(x.shape) == 1:
+            pkl = InterpolatedUnivariateSpline(self.kvals, y, ext='zeros')
+        else:
+            pkl = [InterpolatedUnivariateSpline(self.kvals, y_i, ext='zeros') for y_i in y]
         return pkl
 
 
