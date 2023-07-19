@@ -1,0 +1,21 @@
+datacuts:
+  kmax: 0.5
+  ksplit: 0.15
+  kmin: 0.001
+  logit: True
+  standardize: True
+  ampnorm: False
+  # offset_amp: 1.e+4
+  offset_amp: 0.
+  splits: 2
+  nsubs: 1
+  standardize_cond: True
+  logit_cond: True
+
+analysis:
+  seed: 0
+  train_fraction: 0.85
+  validation_fraction: 0.06
+  alg: snle
+  prior_offset: 0.2
+  suffix: ""
