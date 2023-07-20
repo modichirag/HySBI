@@ -18,12 +18,12 @@ i0=$1
 i1=$2
 echo $i0 $i1
 
-#cfgfolder="kmax0.5-kmin0.001-ksplit0.15-logit-logit_cond-nsubs1-splits1-standardize-standardize_cond/"
-cfgfolder="kmax0.5-kmin0.001-ksplit0.15-logit-logit_cond-nsubs1-splits2-standardize-standardize_cond/"
+# cfgfolder="kmax0.5-kmin0.15-logit-standardize"
+cfgfolder="kmax0.5-kmin0.15-logit-nsubs1-splits2-standardize"
 
 # time python -u sample_sweep.py  --isim $i0  --testsims --cfgfolder $cfgfolder
 for((i=${i0} ; i<=${i1} ; i+=1))
 do
     echo $i    
-    time python -u sample_hybrid.py --isim $i  --testsims --cfgfolder $cfgfolder
+    time python -u sample_independent.py --isim $i  --testsims --cfgfolder $cfgfolder
 done    
