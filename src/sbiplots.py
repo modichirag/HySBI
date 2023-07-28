@@ -133,14 +133,6 @@ def get_ranks(x, y, posterior, test_frac=1.0, nsamples=500, ndim=None):
         if ii%1000 == 0: print("Test iteration : ",ii)
         if np.random.uniform() > test_frac: continue
 
-        # try:
-        #     posterior_samples = posterior.sample((nsamples,),
-        #                                      x=torch.from_numpy(x[ii].astype('float32')), 
-        #                                      show_progress_bars=False).detach().numpy()
-        # except Warning as w:
-        #     #except :
-        #     print("WARNING\n", w)
-        #     continue
         try:
             posterior_samples = _sample_for_rank(posterior, x[ii], nsamples)
         except Exception as e:

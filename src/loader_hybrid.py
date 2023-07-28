@@ -41,11 +41,19 @@ def process_pk(args, k, pk, verbose=True):
     return k, pk, offset
 
 
-def lh_features(args, verbose=True):
+def lh_features(args, seed=99, verbose=True):
     if args.splits > 1:
         pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
         k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")
-        pk = pk[:, :args.nsubs]
+        if args.nsubs == 1:
+            pk = pk[:, :1]
+        else:
+            np.random.seed(seed)
+            pk2 = []
+            for i in range(pk.shape[0]):
+                idx = np.random.choice(np.arange(args.splits**3), args.nsubs, replace=False)
+                pk2.append(pk[i][idx])
+            pk = np.array(pk2)
     elif args.splits == 1:
         pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/pk.npy")
         k = pk[0, :, 0]
@@ -98,6 +106,7 @@ def loader(args, return_k=False):
     params = np.concatenate([params, conditioning], axis=-1)
 
     nsubs = args.nsubs
+    if  args.splits == 1: nsubs = 1
     params = np.repeat(params, nsubs, axis=0).reshape(-1, nsubs, params.shape[-1])    
 
     if offset is not None:
