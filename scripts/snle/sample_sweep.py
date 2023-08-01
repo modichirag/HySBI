@@ -17,7 +17,7 @@ parser.add_argument('--cfgfolder', type=str, help='folder of the sweep')
 args = parser.parse_args()
 print(args)
 
-nposterior = 5
+nposterior = 10
 nsteps, nwalkers, ndim = 10000, 20, 5
 burn_in, thin = nsteps//10, 10
 
@@ -64,12 +64,10 @@ def log_prob(theta, x):
     batch = theta.shape[0]
     x = torch.from_numpy(np.array([x]*batch).astype(np.float32).reshape(batch, x.shape[-1]))
     theta = torch.from_numpy(theta.astype(np.float32))
-    lp = 0.
-    for p in posteriors:
-        lp += p.potential_fn.likelihood_estimator.log_prob(x, theta)
-    lp /= nposterior
-    lp += prior.log_prob(theta)
-    lp = lp.detach().numpy()
+    weights = 1/nposterior
+    lps = np.stack([weights*p.potential_fn.likelihood_estimator.log_prob(x, theta).detach() for p in posteriors], axis=0)
+    lp = torch.logsumexp(torch.from_numpy(lps), dim=0).detach().numpy()
+    lp += prior.log_prob(theta).detach().numpy()
     return lp
 
 
