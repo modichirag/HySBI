@@ -92,9 +92,9 @@ if sweepdict['scaler'] is not None:
 # log probability
 #prior_cs = [-5, 5]
 prior_cs = Normal(0., 10.)
+prior = sbitools.quijote_prior(offset=0., round=False)
 
 # get log prob
-prior = sbitools.quijote_prior(offset=0., round=False)
 sweepid = sweepdict['sweepid']    
 posteriors = []
 for j in range(nposterior):
@@ -106,13 +106,10 @@ for j in range(nposterior):
 def log_prob_small(theta, data):
     batch = theta.shape[0]
     data = torch.from_numpy(np.array([data]*batch).astype(np.float32).reshape(batch, data.shape[-1]))
-    # cp = torch.from_numpy(cp.astype(np.float32))
-    lp = 0.
-    for p in posteriors:
-        lp += p.potential_fn.likelihood_estimator.log_prob(data, theta)
-    lp /= nposterior
-    lp = lp.detach().numpy()
-    return lp
+    weights = 1/nposterior
+    lks = np.stack([weights*p.potential_fn.likelihood_estimator.log_prob(data, theta).detach() for p in posteriors], axis=0)
+    lk = torch.logsumexp(torch.from_numpy(lks), dim=0).detach().numpy()
+    return lk
 
 
 def log_prob_large_vec(theta, data, kdata, cov):
@@ -123,28 +120,26 @@ def log_prob_large_vec(theta, data, kdata, cov):
     pred = p1loop + pct
     chisq = (pred - data)**2/cov
     lk = -0.5 * np.sum(chisq, axis=1)
-    #prior only on cs
-    lpr = np.zeros_like(lk)
-    lpr = prior_cs.log_prob(torch.from_numpy(cs)).numpy()
-    #lpr[(cs < prior_cs[0])] = -np.inf
-    #lpr[(cs > prior_cs[1])] = -np.inf
-    #  logprob
-    lp = lpr + lk
-    if np.isnan(lp).sum():
+    if np.isnan(lk).sum():
         raise ValueError("log prob is NaN")
-    return lp
+    return lk
 
 
 def log_prob(theta, params_large, params_small):
-    cp = theta[:, :-1]
+    cp, cs = theta[:, :-1], theta[:, -1]
     cp = torch.from_numpy(cp.astype(np.float32))
     data_large, kdata, cov = params_large
     data_small, pk_cond = params_small
     conditioning = np.repeat(pk_cond.reshape(1, -1), cp.shape[0], axis=0).astype(np.float32)
     cp_cond = np.concatenate([cp, conditioning], axis=-1)
+
+    # get likelihoods
     lk_large = log_prob_large_vec(theta, data_large, kdata, cov)
     lk_small = log_prob_small(cp_cond, data_small)
+    # priors
     lpr = prior.log_prob(cp).detach().numpy()
+    lpr += prior_cs.log_prob(torch.from_numpy(cs)).numpy()
+    # total log prob
     lp = lk_large + lk_small + lpr
     return lp
 
