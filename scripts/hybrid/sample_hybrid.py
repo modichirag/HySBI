@@ -41,7 +41,7 @@ cfg_path = f"{base_path}/{args.cfgfolder}/"
 if not os.path.isdir(cfg_path):
     print(f'Configuration folder does not exist at path {cfg_path}.\nCheck cfgfolder argument')
     sys.exit()
-save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid/emcee_chains/') + f'ens{nposterior}/'
+save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2/emcee_chains/') + f'ens{nposterior}/'
 os.makedirs(save_path, exist_ok=True)
 print("samples will be saved at : ", save_path)
 if os.path.isfile(f"{save_path}/LH{isim}.npy"):
@@ -107,7 +107,9 @@ def log_prob_small(theta, data):
     batch = theta.shape[0]
     data = torch.from_numpy(np.array([data]*batch).astype(np.float32).reshape(batch, data.shape[-1]))
     weights = 1/nposterior
-    lks = np.stack([weights*p.potential_fn.likelihood_estimator.log_prob(data, theta).detach() for p in posteriors], axis=0)
+    logweights = np.log(weights)
+    #lks = np.stack([weights*p.potential_fn.likelihood_estimator.log_prob(data, theta).detach() for p in posteriors], axis=0)
+    lks = np.stack([logweights + p.potential_fn.likelihood_estimator.log_prob(data, theta).detach() for p in posteriors], axis=0)
     lk = torch.logsumexp(torch.from_numpy(lks), dim=0).detach().numpy()
     return lk
 
@@ -141,6 +143,9 @@ def log_prob(theta, params_large, params_small):
     lpr += prior_cs.log_prob(torch.from_numpy(cs)).numpy()
     # total log prob
     lp = lk_large + lk_small + lpr
+    #print("large : ", lk_large)
+    #print("small : ", lk_small)
+    #print("prior : ", lpr)
     return lp
 
 

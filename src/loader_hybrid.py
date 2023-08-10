@@ -52,7 +52,10 @@ def lh_features(args, seed=99, verbose=True):
             pk2 = []
             for i in range(pk.shape[0]):
                 idx = np.random.choice(np.arange(args.splits**3), args.nsubs, replace=False)
-                pk2.append(pk[i][idx])
+                if args.meanf : #take mean of all sub-boxes
+                    pk2.append(np.expand_dims(pk[i][idx].mean(axis=0), axis=0))
+                else: 
+                    pk2.append(pk[i][idx])
             pk = np.array(pk2)
     elif args.splits == 1:
         pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/pk.npy")
@@ -106,7 +109,7 @@ def loader(args, return_k=False):
     params = np.concatenate([params, conditioning], axis=-1)
 
     nsubs = args.nsubs
-    if  args.splits == 1: nsubs = 1
+    if  (args.splits == 1) or args.meanf: nsubs = 1
     params = np.repeat(params, nsubs, axis=0).reshape(-1, nsubs, params.shape[-1])    
 
     if offset is not None:
