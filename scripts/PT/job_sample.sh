@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -p gpu
 #SBATCH -C a100-40gb
-#SBATCH --time=8:00:00
+#SBATCH --time=1:00:00
 #SBATCH -N 1
 #SBATCH --gpus=1
 #SBATCH --job-name=pt
@@ -17,7 +17,7 @@ module load cuda cudnn
 source activate ptorch
 
 i0=$1
-i1=$(($i0+50))
+i1=$2
 testsim=1
 # time python -u sampler_pt.py $i0
 
@@ -26,7 +26,7 @@ echo $i0 $i1
 for((i=${i0} ; i<=${i1} ; i+=1))
 do
     echo $i    
-    time python -u sampler_pt.py $i  testsim
+    time python -u sampler_pt.py $i 1  0.1
 done    
 
 # wait

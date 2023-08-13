@@ -22,6 +22,6 @@ N_JOB=$SLURM_NTASKS                # create as many jobs as tasks
 echo $N_JOB
 
 config_data=$1
-nmodels=20
+nmodels=25
 
 time mpirun -n ${N_JOB} python -u run_wandb.py ${config_data} ${nmodels} 

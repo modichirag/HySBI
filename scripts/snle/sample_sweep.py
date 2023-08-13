@@ -65,7 +65,8 @@ def log_prob(theta, x):
     x = torch.from_numpy(np.array([x]*batch).astype(np.float32).reshape(batch, x.shape[-1]))
     theta = torch.from_numpy(theta.astype(np.float32))
     weights = 1/nposterior
-    lps = np.stack([weights*p.potential_fn.likelihood_estimator.log_prob(x, theta).detach() for p in posteriors], axis=0)
+    logweights = np.log(weights)
+    lps = np.stack([logweights + p.potential_fn.likelihood_estimator.log_prob(x, theta).detach() for p in posteriors], axis=0)
     lp = torch.logsumexp(torch.from_numpy(lps), dim=0).detach().numpy()
     lp += prior.log_prob(theta).detach().numpy()
     return lp

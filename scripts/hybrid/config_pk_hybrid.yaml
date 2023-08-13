@@ -1,8 +1,8 @@
 datacuts:
   kmax: 0.5
-  ksplit: 0.1
+  ksplit: 0.15
   kmin: 0.001
-  logit: False
+  logit: True
   standardize: True
   ampnorm: False
   # offset_amp: 1.e+4
@@ -10,8 +10,9 @@ datacuts:
   splits: 2
   nsubs: 8
   standardize_cond: True
-  logit_cond: False
+  logit_cond: True
   meanf : True
+  dk : 2
 
 analysis:
   seed: 0
