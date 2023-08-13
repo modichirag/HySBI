@@ -56,14 +56,40 @@ def process_pk(args, k, pk, verbose=True):
     return k, pk, offset
 
 
-def lh_features(args, verbose=True):
-    pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
-    k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")
-    pk = pk[:, :args.nsubs]
-    print("Loaded power spectrum data with shape : ", pk.shape)
+# def lh_features(args, verbose=True):
+#     pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
+#     k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")
+#     pk = pk[:, :args.nsubs]
+#     print("Loaded power spectrum data with shape : ", pk.shape)
 
+    # return process_pk(args, k, pk, verbose)
+
+def lh_features(args, seed=99, verbose=True):
+    if args.splits > 1:
+
+        if args.dk != 1: #factor which with bin-width for 1Gpc/h is multiplied, default is 1
+            pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}-dk{args.dk}.npy")
+            k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}-dk{args.dk}.npy")
+        else:
+            pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
+            k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")
+        if args.nsubs == 1:
+            pk = pk[:, :1]
+        else:
+            np.random.seed(seed)
+            pk2 = []
+            for i in range(pk.shape[0]):
+                idx = np.random.choice(np.arange(args.splits**3), args.nsubs, replace=False)
+                if args.meanf : #take mean of all sub-boxes
+                    pk2.append(np.expand_dims(pk[i][idx].mean(axis=0), axis=0))
+                else: 
+                    pk2.append(pk[i][idx])
+            pk = np.array(pk2)
+    elif args.splits == 1:
+        pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/pk.npy")
+        k = pk[0, :, 0]
+        pk = np.expand_dims(pk[..., 1], axis=1)
     return process_pk(args, k, pk, verbose)
-
 
 
 def cosmolh_params():
@@ -85,6 +111,7 @@ def loader(args, return_k=False):
     params = cosmolh_params()
 
     nsubs = args.nsubs
+    if  (args.splits == 1) or args.meanf: nsubs = 1
     params = np.repeat(params, nsubs, axis=0).reshape(-1, nsubs, params.shape[-1])    
 
     if offset is not None:
@@ -96,7 +123,6 @@ def loader(args, return_k=False):
         return k, features, params
     else:
         return features, params
-
 
 
 def folder_path(cfgd, verbose=True):

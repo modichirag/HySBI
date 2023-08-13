@@ -43,8 +43,13 @@ def process_pk(args, k, pk, verbose=True):
 
 def lh_features(args, seed=99, verbose=True):
     if args.splits > 1:
-        pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
-        k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")
+
+        if args.dk != 1: #factor which with bin-width for 1Gpc/h is multiplied, default is 1
+            pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}-dk{args.dk}.npy")
+            k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}-dk{args.dk}.npy")
+        else:
+            pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
+            k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")
         if args.nsubs == 1:
             pk = pk[:, :1]
         else:
