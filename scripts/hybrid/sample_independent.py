@@ -38,7 +38,7 @@ cfg_path = f"{base_path}/{args.cfgfolder}/"
 if not os.path.isdir(cfg_path):
     print(f'Configuration folder does not exist at path {cfg_path}.\nCheck cfgfolder argument')
     sys.exit()
-save_path = cfg_path.replace('networks/snle/', 'samples/hybrid_independent/emcee_chains/')
+save_path = cfg_path.replace('networks/snle/', 'samples/hybrid_independent/')
 os.makedirs(save_path, exist_ok=True)
 print("samples will be saved at : ", save_path)
 
@@ -76,6 +76,7 @@ print("\nSetting up small scale data")
 ksmall, pk_small, offset = loader_pk_splits.process_pk(sweepdict['cfg'], k, pk, verbose=True)
 if sweepdict['scaler'] is not None:
     pk_small_processed = sbitools.standardize(pk_small.copy(), scaler=sweepdict['scaler'], log_transform=sweepdict['cfg'].logit)[0]
+
 # get log prob
 prior = sbitools.quijote_prior(offset=0., round=False)
 sweepid = sweepdict['sweepid']    
@@ -89,18 +90,17 @@ for j in range(nposterior):
 
 ################################################
 # log probability
-prior_cs = [-5, 5]
+#prior_cs = [-5, 5]
+prior_cs = Normal(0., 10.)
 
 def log_prob_small(theta, data):
     batch = theta.shape[0]
     data = torch.from_numpy(np.array([data]*batch).astype(np.float32).reshape(batch, data.shape[-1]))
-    # cp = torch.from_numpy(cp.astype(np.float32))
-    lp = 0.
-    for p in posteriors:
-        lp += p.potential_fn.likelihood_estimator.log_prob(data, theta)
-    lp /= nposterior
-    lp = lp.detach().numpy()
-    return lp
+    weights = 1/nposterior
+    logweights = np.log(weights)
+    lks = np.stack([logweights + p.potential_fn.likelihood_estimator.log_prob(data, theta).detach() for p in posteriors], axis=0)
+    lk = torch.logsumexp(torch.from_numpy(lks), dim=0).detach().numpy()
+    return lk
 
 
 def log_prob_large_vec(theta, data, kdata, cov):
