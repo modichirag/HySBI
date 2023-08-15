@@ -19,6 +19,7 @@ parser.add_argument('--no-testsims', dest='testsims', action='store_false')
 parser.add_argument('--cfgfolder', type=str, help='folder of the sweep')
 parser.add_argument('--subdata', default=False, action='store_true')
 parser.add_argument('--no-subdata', dest='subdata', action='store_false')
+parser.add_argument('--kcut', type=float, default=0., help='cut PT model at this scale')
 args = parser.parse_args()
 print()
 
@@ -46,9 +47,12 @@ if not os.path.isdir(cfg_path):
 
 # if still running
 if args.subdata:
-    save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2_sub/') + f'ens{nposterior}/'
+    save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2_sub/')
 else:
-    save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2/') + f'ens{nposterior}/'
+    save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2/') 
+if args.kcut != 0:
+    save_path = save_path + f'/kcut{args.kcut}/'
+save_path = save_path + f'ens{nposterior}/'
 os.makedirs(save_path, exist_ok=True)
 print("samples will be saved at : ", save_path)
 if os.path.isfile(f"{save_path}/LH{isim}.npy"):
@@ -77,7 +81,10 @@ cfg = sweepdict['cfg']
 print("\nSetting up large scale data")
 pk = np.load(f'{data_path}/pkmatter_quijote.npy')[isim, :, 1]
 k =  np.load(f'{data_path}/kmatter_quijote.npy')
-idx = (k > cfg.kmin) & (k < cfg.ksplit)
+if args.kcut !=0:
+    idx = (k > cfg.kmin) & (k < args.kcut)
+else:
+    idx = (k > cfg.kmin) & (k < cfg.ksplit)
 klarge, pk_large_data = k[idx], pk[idx]
 cov = np.load(f'{data_path}/cov_disconnected_cs1_quijote.npy')[1:klarge.size+1, 1] #1st row is k=0
 

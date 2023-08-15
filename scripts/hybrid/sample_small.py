@@ -3,7 +3,7 @@ import os, sys, time
 
 sys.path.append('../../src/')
 import pt, sbitools
-import loader_hybrid as loader
+import loader_hybrid, loader_pk, loader_pk_splits
 from utils import BoltzNet
 
 import argparse
@@ -17,6 +17,8 @@ parser.add_argument('--isim', type=int, help='Simulation number to run')
 parser.add_argument('--testsims', default=False, action='store_true')
 parser.add_argument('--no-testsims', dest='testsims', action='store_false')
 parser.add_argument('--cfgfolder', type=str, help='folder of the sweep')
+parser.add_argument('--subdata', default=False, action='store_true')
+parser.add_argument('--no-subdata', dest='subdata', action='store_false')
 args = parser.parse_args()
 print()
 
@@ -40,9 +42,14 @@ cfg_path = f"{base_path}/{args.cfgfolder}/"
 if not os.path.isdir(cfg_path):
     print(f'Configuration folder does not exist at path {cfg_path}.\nCheck cfgfolder argument')
     sys.exit()
-save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid_small/emcee_chains/') + f'ens{nposterior}/'
+
+# if still running
+if args.subdata:
+    save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2_small_sub/') + f'ens{nposterior}/'
+else:
+    save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2_small/') + f'ens{nposterior}/'
 os.makedirs(save_path, exist_ok=True)
-print("samples will be saved at : ", save_path)
+print("\nsamples will be saved at : ", save_path)
 if os.path.isfile(f"{save_path}/LH{isim}.npy"):
     print(f"Already sampled. File {save_path}/LH{isim}.npy already exists. Exiting.")
     sys.exit()
@@ -64,15 +71,20 @@ pk = np.load(f'{data_path}/pkmatter_quijote.npy')[isim, :, 1]
 k =  np.load(f'{data_path}/kmatter_quijote.npy')
 
 # setup conditioning for small scales
-kcond, pk_cond, _ = loader.pkcond(cfg)
+kcond, pk_cond, _ = loader_hybrid.pkcond(cfg)
 pk_cond = pk_cond[isim]
 
 # setup small scales
 print("\nSetting up small scale data")
-idx = (k > cfg.ksplit) & (k < cfg.kmax)
-ksmall, pk_small = k[idx], pk[idx]
-# ksmall, pk_small, _ = loader.lh_features(cfg)   ### ERROR : THIS CAN BE WRONG FOR SPLIT > 1
-# pk_small = pk_small[isim]
+if args.subdata:
+    ksmall, pk_small, _ = loader_hybrid.lh_features(cfg)
+    pk_small = pk_small[isim]
+else:
+    ksmall, pk_small, _ = loader_pk.lh_features(cfg)
+    pk_small = pk_small[isim]
+    idx = (ksmall > cfg.ksplit) & (ksmall < cfg.kmax)
+    ksmall, pk_small = ksmall[idx], pk_small[idx]
+
 if sweepdict['scaler'] is not None:
     pk_small_data = sbitools.standardize(pk_small.reshape(1, -1).copy(), scaler=sweepdict['scaler'], log_transform=cfg.logit)[0]
     pk_small_data = pk_small_data[0] #remove batch dimension
