@@ -56,7 +56,14 @@ def process_pk(args, k, pk, verbose=True):
 
 
 def lh_features(args, verbose=True):
-    pk = np.load('/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/pk.npy')
+    try:
+        if args.dk != 1: #factor which with bin-width for 1Gpc/h is multiplied, default is 1
+            pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power-dk{args.dk}.npy")
+        else:
+            pk = np.load('/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/pk.npy')
+    except Exception as e:
+        print(e)
+        pk = np.load('/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/pk.npy')
     k = pk[0, :, 0]
     pk = pk[..., 1]
     print("Loaded power spectrum data with shape : ", pk.shape)

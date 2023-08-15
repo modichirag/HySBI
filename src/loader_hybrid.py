@@ -41,15 +41,38 @@ def process_pk(args, k, pk, verbose=True):
     return k, pk, offset
 
 
-def lh_features(args, seed=99, verbose=True):
-    if args.splits > 1:
-
+def _parse_pk_args(args):
+    try:
         if args.dk != 1: #factor which with bin-width for 1Gpc/h is multiplied, default is 1
             pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}-dk{args.dk}.npy")
             k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}-dk{args.dk}.npy")
         else:
+            if args.sym:
+                pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}-sym.npy")
+                k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}-sym.npy")
+            else:
+                pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
+                k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")
+    except Exception as e:
+        print("Exception in _parse_pk_args: ", e)
+        try:
+            if args.sym:
+                pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}-sym.npy")
+                k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}-sym.npy")
+            else:
+                pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
+                k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")
+        except Exception as e:
+            print("Exception in _parse_pk_args: ", e)
             pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
             k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")
+            
+    return k, pk
+
+
+def lh_features(args, seed=99, verbose=True):
+    if args.splits > 1:
+        k, pk = _parse_pk_args(args)        
         if args.nsubs == 1:
             pk = pk[:, :1]
         else:
@@ -62,10 +85,12 @@ def lh_features(args, seed=99, verbose=True):
                 else: 
                     pk2.append(pk[i][idx])
             pk = np.array(pk2)
+            
     elif args.splits == 1:
         pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/pk.npy")
         k = pk[0, :, 0]
         pk = np.expand_dims(pk[..., 1], axis=1)
+        
     print("Loaded power spectrum data with shape : ", pk.shape)
     small_args = {'kmin': args.ksplit, 'kmax': args.kmax, 'offset_amp': args.offset_amp}
     small_args = sbitools.Objectify(small_args)
