@@ -5,7 +5,7 @@ import argparse
 
 sys.path.append('../../src/')
 import sbitools
-import loader_pk as loader
+import loader_pk, loader_pk_splits
 
 import emcee, zeus
 import torch
@@ -29,7 +29,10 @@ if args.testsims:
 else:
     isim = args.isim
 
-
+if "splits" in args.cfgfolder:
+    loader = loader_pk_splits
+else:
+    loader = loader_pk
 
 # Setup paths
 print(f"Sample for LH {isim}")
@@ -38,7 +41,7 @@ cfg_path = f"{base_path}/{args.cfgfolder}/"
 if not os.path.isdir(cfg_path):
     print(f'Configuration folder does not exist at path {cfg_path}.\nCheck cfgfolder argument')
     sys.exit()
-save_path = cfg_path.replace('networks/snle/', 'samples/snle/')
+save_path = cfg_path.replace('networks/snle/', 'samples/snle_sub/')
 os.makedirs(save_path, exist_ok=True)
 print("samples will be saved at : ", save_path)
 
@@ -47,7 +50,9 @@ print("samples will be saved at : ", save_path)
 sweepdict = sbitools.setup_sweepdict(cfg_path)
 print(f"Run analysis for LH {isim}")
 features, params = loader.loader(sweepdict['cfg'])
+params = np.squeeze(params)
 x = features[isim].reshape(1, -1)
+print("x shape : ", x.shape)
 if sweepdict['scaler'] is not None:
     x = sbitools.standardize(x, scaler=sweepdict['scaler'], log_transform=sweepdict['cfg'].logit)[0]
 print("Data shape : ", x.shape)

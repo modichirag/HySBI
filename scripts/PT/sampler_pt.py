@@ -28,7 +28,7 @@ else:
     pass
 print(f"Sample for LH {isim}")
 
-save_path = f"/mnt/ceph/users/cmodi/HySBI/matter/samples/PT/emcee_chains/kmax{kmax}/"
+save_path = f"/mnt/ceph/users/cmodi/HySBI/matter/samples/PT/kmax{kmax}/"
 if os.path.isfile(f"{save_path}/LH{isim}.npy"):
     print(f"Already sampled. File {save_path}/LH{isim}.npy already exists. Exiting.")
     sys.exit()
