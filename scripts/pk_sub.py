@@ -86,7 +86,7 @@ def get_pksubs_deconv(f, fac=2):
                 pk = FFTPower(mesh, mode='1d', kmin=kmin2, dk=kF2).power
                 psubs.append(imm @ pk['power'].real)
                 ksubs = pk['k']
-                ipsubs = iuspline(ksubs, psubs[-1], ext=1)(ikvals)
+                ipsubs.append(iuspline(ksubs, psubs[-1], ext=1)(ikvals))
                 
     psubs = np.array(psubs)
     ipsubs = np.array(ipsubs)
