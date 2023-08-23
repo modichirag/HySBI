@@ -64,21 +64,31 @@ def process_pk(args, k, pk, verbose=True):
 
     # return process_pk(args, k, pk, verbose)
 
+def _parse_pk_args(args):
+    try:
+        pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}{args.style}.npy")
+        k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}{args.style}.npy")
+    except Exception as e:
+        print("Exception in _parse_pk_args: ", e)
+        pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
+        k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")   
+    return k, pk
+
 def lh_features(args, seed=99, verbose=True):
     if args.splits > 1:
-
-        try:
-            if args.dk != 1: #factor which with bin-width for 1Gpc/h is multiplied, default is 1
-                pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}-dk{args.dk}.npy")
-                k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}-dk{args.dk}.npy")        
-            else:
-                pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
-                k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")
-        except Exception as e:
-            print("Exception in lh_features in loader_pk_splits", e)
-            print(f"loading from power_split{args.splits}.npy")
-            pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
-            k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")            
+        k, pk = _parse_pk_args(args)        
+        # try:
+        #     if args.dk != 1: #factor which with bin-width for 1Gpc/h is multiplied, default is 1
+        #         pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}-dk{args.dk}.npy")
+        #         k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}-dk{args.dk}.npy")        
+        #     else:
+        #         pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
+        #         k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")
+        # except Exception as e:
+        #     print("Exception in lh_features in loader_pk_splits", e)
+        #     print(f"loading from power_split{args.splits}.npy")
+        #     pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power_split{args.splits}.npy")
+        #     k = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/k_split{args.splits}.npy")            
         if args.nsubs == 1:
             pk = pk[:, :1]
         else:

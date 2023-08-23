@@ -55,14 +55,10 @@ def process_pk(args, k, pk, verbose=True):
     return k, pk, offset
 
 
-def lh_features(args, verbose=True):
-    try:
-        if args.dk != 1: #factor which with bin-width for 1Gpc/h is multiplied, default is 1
-            pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power-dk{args.dk}.npy")
-        else:
-            pk = np.load('/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/pk.npy')
-    except Exception as e:
-        print(e)
+def lh_features(args, verbose=True, dk=1):
+    if dk != 1: #factor which with bin-width for 1Gpc/h is multiplied, default is 1
+        pk = np.load(f"/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/power-dk{dk}.npy")
+    else:
         pk = np.load('/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/pk.npy')
     k = pk[0, :, 0]
     pk = pk[..., 1]
@@ -80,14 +76,14 @@ def cosmolh_params():
 
 
 
-def loader(args, return_k=False):
+def loader(args, return_k=False, dk=1):
     """
     Data:
     power spectrum multipoles and ngals
     Offset multipoles with a random constant amplitude scaled with offset_amp.
     """
     
-    k, features, offset = lh_features(args)
+    k, features, offset = lh_features(args, dk=dk)
     params = cosmolh_params()
     
     if offset is not None:

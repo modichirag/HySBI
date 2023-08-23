@@ -19,6 +19,7 @@ parser.add_argument('--no-testsims', dest='testsims', action='store_false')
 parser.add_argument('--cfgfolder', type=str, help='folder of the sweep')
 parser.add_argument('--subdata', default=False, action='store_true')
 parser.add_argument('--no-subdata', dest='subdata', action='store_false')
+parser.add_argument('--dk', type=int, default=1)
 args = parser.parse_args()
 print()
 
@@ -47,7 +48,10 @@ if not os.path.isdir(cfg_path):
 if args.subdata:
     save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2_small_sub/') + f'ens{nposterior}/'
 else:
-    save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2_small/') + f'ens{nposterior}/'
+    if args.dk == 1:
+        save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2_small/') + f'ens{nposterior}/'
+    else:
+        save_path = cfg_path.replace('networks/hybrid/', f'samples/hybrid2_small_dk{args.dk}/') + f'ens{nposterior}/'
 os.makedirs(save_path, exist_ok=True)
 print("\nsamples will be saved at : ", save_path)
 if os.path.isfile(f"{save_path}/LH{isim}.npy"):
@@ -80,9 +84,10 @@ if args.subdata:
     ksmall, pk_small, _ = loader_hybrid.lh_features(cfg)
     pk_small = pk_small[isim]
 else:
-    ksmall, pk_small, _ = loader_pk.lh_features(cfg)
+    ksmall, pk_small, _ = loader_pk.lh_features(cfg, dk=args.dk)
     pk_small = pk_small[isim]
     idx = (ksmall > cfg.ksplit) & (ksmall < cfg.kmax)
+    print("small idx : " , idx)
     ksmall, pk_small = ksmall[idx], pk_small[idx]
 
 if sweepdict['scaler'] is not None:

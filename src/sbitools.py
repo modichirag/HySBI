@@ -180,7 +180,7 @@ def minmax(data, log_transform=True, scaler=None):
 
 
 ###
-def save_posterior(scaler, savepath):
+def save_scaler(scaler, savepath):
     with open(savepath + "scaler.pkl", "wb") as handle:
         pickle.dump(scaler, handle)
 
