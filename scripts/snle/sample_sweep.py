@@ -5,7 +5,7 @@ import argparse
 
 sys.path.append('../../src/')
 import sbitools
-import loader_pk as loader
+import loader_pk, loader_pk_splits
 
 import emcee, zeus
 import torch
@@ -15,6 +15,10 @@ parser.add_argument('--isim', type=int, help='Simulation number to run')
 parser.add_argument('--testsims', default=False, action='store_true')
 parser.add_argument('--no-testsims', dest='testsims', action='store_false')
 parser.add_argument('--cfgfolder', type=str, help='folder of the sweep')
+parser.add_argument('--subdata', default=False, action='store_true')
+parser.add_argument('--no-subdata', dest='subdata', action='store_false')
+parser.add_argument('--ksplit', type=float, default=0.15)
+parser.add_argument('--dk', type=int, default=1)
 args = parser.parse_args()
 print(args)
 
@@ -38,22 +42,40 @@ cfg_path = f"{base_path}/{args.cfgfolder}/"
 if not os.path.isdir(cfg_path):
     print(f'Configuration folder does not exist at path {cfg_path}.\nCheck cfgfolder argument')
     sys.exit()
-save_path = cfg_path.replace('networks/snle/', 'samples/snle/')
+
+# if still running
+if args.subdata:
+    save_path = cfg_path.replace('networks/snle/', 'samples/snle_sub/') + f'ens{nposterior}/'
+else:
+    if args.dk == 1: save_path = cfg_path.replace('networks/snle/', 'samples/snle/') + f'ens{nposterior}/'
+    else:
+        save_path = cfg_path.replace('networks/snle/', f'samples/snle_dk{args.dk}/') + f'ens{nposterior}/'
+#save_path = cfg_path.replace('networks/snle/', 'samples/snle/')
 os.makedirs(save_path, exist_ok=True)
 print("samples will be saved at : ", save_path)
 
 
 # get sweepdict and data
 sweepdict = sbitools.setup_sweepdict(cfg_path)
+cfg = sweepdict['cfg']
+
 print(f"Run analysis for LH {isim}")
-features, params = loader.loader(sweepdict['cfg'])
-x = features[isim].reshape(1, -1)
+#features, params = loader_pk.loader(sweepdict['cfg'], dk=dk)
+#x = features[isim].reshape(1, -1)
+if args.subdata:
+    k, pk, _ = loader_pk_splits.lh_features(cfg)
+else:
+    k, pk, _ = loader_pk.lh_features(cfg, dk=args.dk)
+pk = pk[isim]
+idx = (k > cfg.kmin) & (k < cfg.kmax)
+k, pk = k[idx], pk[idx]
+x = pk.reshape(1, -1) 
 if sweepdict['scaler'] is not None:
     x = sbitools.standardize(x, scaler=sweepdict['scaler'], log_transform=sweepdict['cfg'].logit)[0]
 print("Data shape : ", x.shape)
 
 # get log prob
-prior = sbitools.sbi_prior(params, offset=0., round=False)
+prior = sbitools.quijote_prior(offset=0., round=False)
 sweepid = sweepdict['sweepid']    
 posteriors = []
 for j in range(nposterior):

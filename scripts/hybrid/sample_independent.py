@@ -8,24 +8,31 @@ from utils import BoltzNet
 import argparse
 import emcee
 import torch
+from torch.distributions import Normal
 
 
 parser = argparse.ArgumentParser(description='Arguments for simulations to run')
 parser.add_argument('--isim', type=int, help='Simulation number to run')
+parser.add_argument('--ens', type=int, default=10, help='number of posterior')
 parser.add_argument('--testsims', default=False, action='store_true')
 parser.add_argument('--no-testsims', dest='testsims', action='store_false')
 parser.add_argument('--cfgfolder', type=str, help='folder of the sweep')
+parser.add_argument('--subdata', default=False, action='store_true')
+parser.add_argument('--no-subdata', dest='subdata', action='store_false')
+parser.add_argument('--ksplit', type=float, default=0.15)
+parser.add_argument('--dk', type=int, default=1)
 args = parser.parse_args()
 print()
 
-nposterior = 5
+nposterior = args.ens
 nsteps, nwalkers, ndim = 10000, 20, 6
 burn_in, thin = nsteps//10, 10
 
 
 ## Parse arguments
 if args.testsims:
-    testidx = np.load('/mnt/ceph/users/cmodi/HySBI/test-train-splits/test-N2000-f0.15-S0.npy')
+    #testidx = np.load('/mnt/ceph/users/cmodi/HySBI/test-train-splits/test-N2000-f0.15-S0.npy')
+    testidx = np.load('/mnt/home/cmodi/Research/Projects/HySBI/data/testidx_p0-0.15-0.45_p4-0.65-0.95.npy')
     isim = testidx[args.isim]
 else:
     isim = args.isim
@@ -38,7 +45,15 @@ cfg_path = f"{base_path}/{args.cfgfolder}/"
 if not os.path.isdir(cfg_path):
     print(f'Configuration folder does not exist at path {cfg_path}.\nCheck cfgfolder argument')
     sys.exit()
-save_path = cfg_path.replace('networks/snle/', 'samples/hybrid_independent/')
+
+# if still running
+if args.subdata:
+    save_path = cfg_path.replace('networks/snle/', 'samples/hybrid2_indep_sub/') + f'ens{nposterior}/'
+else:
+    if args.dk == 1: save_path = cfg_path.replace('networks/snle/', 'samples/hybrid2_indep/') + f'ens{nposterior}/'
+    else:
+        save_path = cfg_path.replace('networks/snle/', f'samples/hybrid2_indep_dk{args.dk}/') + f'ens{nposterior}/'
+
 os.makedirs(save_path, exist_ok=True)
 print("samples will be saved at : ", save_path)
 
@@ -55,30 +70,48 @@ modelspt.load_model(f'{data_path}/sptnet/ep3k/')
 # get sweepdict and data
 print("\nloading sweep")
 sweepdict = sbitools.setup_sweepdict(cfg_path)
+cfg = sweepdict['cfg']
 
 
 ################################################
 # load and process data
-pk = np.load(f'{data_path}/pkmatter_quijote.npy')[isim, :, 1].reshape(1, -1)
+pk = np.load(f'{data_path}/pkmatter_quijote.npy')[isim, :, 1]
 k =  np.load(f'{data_path}/kmatter_quijote.npy')
 # params = np.load(f'{data_path}/params_quijote_lh.npy')[isim]
-ksplit, kmax = 0.15, sweepdict['cfg'].kmax
-
-# setup large scale data and likelihood
-print("\nSetting up large scale data")
-cfg_large = {"kmin": 0.001, "kmax":ksplit, "offset_amp":0, "ampnorm":False}
-cfg_large = sbitools.Objectify(cfg_large)
-klarge, pk_large = loader_pk.k_cuts(cfg_large, pk=pk.copy(), k=k.copy())
+ksplit = args.ksplit
+idx = (k > 0.001) & (k < args.ksplit)
+klarge, pk_large_data = k[idx], pk[idx]
 cov = np.load(f'{data_path}/cov_disconnected_cs1_quijote.npy')[1:klarge.size+1, 1] #1st row is k=0
 
 # setup small scales
 print("\nSetting up small scale data")
-ksmall, pk_small, offset = loader_pk_splits.process_pk(sweepdict['cfg'], k, pk, verbose=True)
-if sweepdict['scaler'] is not None:
-    pk_small_processed = sbitools.standardize(pk_small.copy(), scaler=sweepdict['scaler'], log_transform=sweepdict['cfg'].logit)[0]
+if args.subdata:
+    ksmall, pk_small, _ = loader_hybrid.lh_features(cfg)
+    pk_small = pk_small[isim]
+else:
+    ksmall, pk_small, _ = loader_pk.lh_features(cfg, dk=args.dk)
+    pk_small = pk_small[isim]
+    idx = (ksmall > args.ksplit) & (ksmall < cfg.kmax)
+    ksmall, pk_small = ksmall[idx], pk_small[idx]
 
-# get log prob
-prior = sbitools.quijote_prior(offset=0., round=False)
+if sweepdict['scaler'] is not None:
+    pk_small_data = sbitools.standardize(pk_small.reshape(1, -1).copy(), scaler=sweepdict['scaler'], log_transform=cfg.logit)[0]
+    pk_small_data = pk_small_data[0] #remove batch dimension
+
+# # setup large scale data and likelihood
+# print("\nSetting up large scale data")
+# cfg_large = {"kmin": cfg.kmin, "kmax":ksplit, "offset_amp":0, "ampnorm":False}
+# cfg_large = sbitools.Objectify(cfg_large)
+# klarge, pk_large = loader_pk.k_cuts(cfg_large, pk=pk.copy(), k=k.copy())
+# cov = np.load(f'{data_path}/cov_disconnected_cs1_quijote.npy')[1:klarge.size+1, 1] #1st row is k=0
+
+# setup small scales
+# print("\nSetting up small scale data")
+# ksmall, pk_small, offset = loader_pk_splits.process_pk(sweepdict['cfg'], k, pk, verbose=True)
+# if sweepdict['scaler'] is not None:
+#     pk_small_processed = sbitools.standardize(pk_small.copy(), scaler=sweepdict['scaler'], log_transform=sweepdict['cfg'].logit)[0]
+    
+# get sweep
 sweepid = sweepdict['sweepid']    
 posteriors = []
 for j in range(nposterior):
@@ -92,6 +125,7 @@ for j in range(nposterior):
 # log probability
 #prior_cs = [-5, 5]
 prior_cs = Normal(0., 10.)
+prior = sbitools.quijote_prior(offset=0., round=False)
 
 def log_prob_small(theta, data):
     batch = theta.shape[0]
@@ -111,34 +145,33 @@ def log_prob_large_vec(theta, data, kdata, cov):
     pred = p1loop + pct
     chisq = (pred - data)**2/cov
     lk = -0.5 * np.sum(chisq, axis=1)
-    #prior only on cs
-    lpr = np.zeros_like(lk)
-    lpr[(cs < prior_cs[0])] = -np.inf
-    lpr[(cs > prior_cs[1])] = -np.inf
-    #  logprob
-    lp = lpr + lk
-    if np.isnan(lp).sum():
+    if np.isnan(lk).sum():
         raise ValueError("log prob is NaN")
-    return lp
+    return lk
 
 def log_prob(theta, params_large, params_small):
     cp = theta[:, :-1]
+    cs = theta[:, -1]
     cp = torch.from_numpy(cp.astype(np.float32))
     data_large, kdata, cov = params_large
     data_small = params_small[0]
+    #
     lk_large = log_prob_large_vec(theta, data_large, kdata, cov)
     lk_small = log_prob_small(cp, data_small)
+    # priors
     lpr = prior.log_prob(cp).detach().numpy()
+    lpr += prior_cs.log_prob(torch.from_numpy(cs)).numpy()
+    # total log prob
     lp = lk_large + lk_small + lpr
     return lp
 
 
-params_large = [pk_large, klarge, cov]
-params_small = [pk_small_processed]
+params_large = [pk_large_data, klarge, cov]
+params_small = [pk_small]
 # Initialize and sample
 np.random.seed(42)
 cp0 = np.stack([prior.sample() for i in range(nwalkers)])
-cs0 = np.random.uniform(prior_cs[0], prior_cs[1], nwalkers).reshape(-1, 1)
+cs0 = np.random.uniform(-5, 5, nwalkers).reshape(-1, 1)
 theta0 = np.concatenate([cp0, cs0], axis=-1)
 print("initial sample shape : ", theta0.shape)
 print(f"Log prob at initialization : ", log_prob(theta0, params_large, params_small))
