@@ -5,6 +5,7 @@ sys.path.append('../../src/')
 import pt, sbitools
 import loader_hybrid, loader_pk, loader_pk_splits
 from utils import BoltzNet
+import pt_covariance
 
 import argparse
 import emcee
@@ -20,6 +21,8 @@ parser.add_argument('--no-testsims', dest='testsims', action='store_false')
 parser.add_argument('--cfgfolder', type=str, help='folder of the sweep')
 parser.add_argument('--subdata', default=False, action='store_true')
 parser.add_argument('--no-subdata', dest='subdata', action='store_false')
+parser.add_argument('--varycov', default=False, action='store_true')
+parser.add_argument('--no-varycov', dest='varycov', action='store_false')
 parser.add_argument('--dk', type=int, default=1)
 args = parser.parse_args()
 print()
@@ -48,11 +51,16 @@ if not os.path.isdir(cfg_path):
 
 # if still running
 if args.subdata:
-    save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2_sub/') + f'ens{nposterior}/'
+    save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2_sub/') 
 else:
-    if args.dk == 1: save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2/') + f'ens{nposterior}/'
+    if args.dk == 1: save_path = cfg_path.replace('networks/hybrid/', 'samples/hybrid2/') 
     else:
-        save_path = cfg_path.replace('networks/hybrid/', f'samples/hybrid2_dk{args.dk}/') + f'ens{nposterior}/'
+        save_path = cfg_path.replace('networks/hybrid/', f'samples/hybrid2_dk{args.dk}/') 
+
+save_path += f'ens{nposterior}/'
+if args.varycov:
+    save_path = save_path[:-1] + '_varycov/'
+    
 os.makedirs(save_path, exist_ok=True)
 print("samples will be saved at : ", save_path)
 if os.path.isfile(f"{save_path}/LH{isim}.npy"):
@@ -83,7 +91,13 @@ pk = np.load(f'{data_path}/pkmatter_quijote.npy')[isim, :, 1]
 k =  np.load(f'{data_path}/kmatter_quijote.npy')
 idx = (k > cfg.kmin) & (k < cfg.ksplit)
 klarge, pk_large_data = k[idx], pk[idx]
-cov = np.load(f'{data_path}/cov_disconnected_cs1_quijote.npy')[1:klarge.size+1, 1] #1st row is k=0
+if args.varycov:
+    params = sbitools.quijote_params()[0]
+    cp = params[isim]
+    cov = pt_covariance.get_cov(cp)[1][1:klarge.size+1]
+else:
+    cov = np.load(f'{data_path}/cov_disconnected_cs1_quijote.npy')[1:klarge.size+1, 1]
+#cov = np.load(f'{data_path}/cov_disconnected_cs1_quijote.npy')[1:klarge.size+1, 1] #1st row is k=0
 
 # setup conditioning for small scales
 kcond, pk_cond, _ = loader_hybrid.pkcond(cfg)

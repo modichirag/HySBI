@@ -4,6 +4,7 @@ import os, sys, time
 sys.path.append('../../src/')
 import pt, sbitools, loader_pk, loader_pk_splits
 from utils import BoltzNet
+import pt_covariance
 
 import argparse
 import emcee
@@ -20,6 +21,8 @@ parser.add_argument('--cfgfolder', type=str, help='folder of the sweep')
 parser.add_argument('--subdata', default=False, action='store_true')
 parser.add_argument('--no-subdata', dest='subdata', action='store_false')
 parser.add_argument('--ksplit', type=float, default=0.15)
+parser.add_argument('--varycov', default=False, action='store_true')
+parser.add_argument('--no-varycov', dest='varycov', action='store_false')
 parser.add_argument('--dk', type=int, default=1)
 args = parser.parse_args()
 print()
@@ -53,6 +56,8 @@ else:
     if args.dk == 1: save_path = cfg_path.replace('networks/snle/', 'samples/hybrid2_indep/') + f'ens{nposterior}/'
     else:
         save_path = cfg_path.replace('networks/snle/', f'samples/hybrid2_indep_dk{args.dk}/') + f'ens{nposterior}/'
+if args.varycov:
+    save_path = save_path[:-1] + '_varycov/'
 
 os.makedirs(save_path, exist_ok=True)
 print("samples will be saved at : ", save_path)
@@ -81,7 +86,13 @@ k =  np.load(f'{data_path}/kmatter_quijote.npy')
 ksplit = args.ksplit
 idx = (k > 0.001) & (k < args.ksplit)
 klarge, pk_large_data = k[idx], pk[idx]
-cov = np.load(f'{data_path}/cov_disconnected_cs1_quijote.npy')[1:klarge.size+1, 1] #1st row is k=0
+if args.varycov:
+    params = sbitools.quijote_params()[0]
+    cp = params[isim]
+    cov = pt_covariance.get_cov(cp)[1][1:klarge.size+1]
+else:
+    cov = np.load(f'{data_path}/cov_disconnected_cs1_quijote.npy')[1:klarge.size+1, 1]
+#cov = np.load(f'{data_path}/cov_disconnected_cs1_quijote.npy')[1:klarge.size+1, 1] #1st row is k=0
 
 # setup small scales
 print("\nSetting up small scale data")
@@ -95,8 +106,8 @@ else:
     ksmall, pk_small = ksmall[idx], pk_small[idx]
 
 if sweepdict['scaler'] is not None:
-    pk_small_data = sbitools.standardize(pk_small.reshape(1, -1).copy(), scaler=sweepdict['scaler'], log_transform=cfg.logit)[0]
-    pk_small_data = pk_small_data[0] #remove batch dimension
+    pk_small = sbitools.standardize(pk_small.reshape(1, -1).copy(), scaler=sweepdict['scaler'], log_transform=cfg.logit)[0]
+    pk_small = pk_small[0] #remove batch dimension
 
 # # setup large scale data and likelihood
 # print("\nSetting up large scale data")
