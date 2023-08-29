@@ -28,7 +28,8 @@ burn_in, thin = nsteps//10, 10
 
 ## Parse arguments
 if args.testsims:
-    testidx = np.load('/mnt/ceph/users/cmodi/HySBI/test-train-splits/test-N2000-f0.15-S0.npy')
+    #testidx = np.load('/mnt/ceph/users/cmodi/HySBI/test-train-splits/test-N2000-f0.15-S0.npy')
+    testidx = np.load('/mnt/home/cmodi/Research/Projects/HySBI/data/testidx_p0-0.15-0.45_p4-0.65-0.95.npy')
     isim = testidx[args.isim]
 else:
     isim = args.isim

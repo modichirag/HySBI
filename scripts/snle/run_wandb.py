@@ -3,13 +3,14 @@ import numpy as np
 import sys, os
 sys.path.append('../../src/')
 import sbitools
-import loader_pk, loader_pk_splits
+import loader_pk, loader_pk_splits, loader_wv
 import wandb
 import yaml
 
 ## Parse arguments
 config_data = sys.argv[1]
 nmodels = int(sys.argv[2])
+summary = sys.argv[3]
 cfgd_dict = yaml.load(open(f'{config_data}'), Loader=yaml.Loader)
 sweep_id = cfgd_dict['sweep']['id']
 print(sweep_id)
@@ -21,11 +22,16 @@ for i in cfgd_dict.keys():
 cfgd = sbitools.Objectify(**args)
 
 #
-if 'splits' in config_data: 
-    loader = loader_pk_splits
+if summary == 'pk':
+    if 'splits' in config_data: 
+        loader = loader_pk_splits
+    else:
+        loader  = loader_pk
+elif summary == 'wavelets':
+    loader = loader_wv
 else:
-    loader  = loader_pk
-
+    print("Loader could not be determined. Exiting")
+    sys.exit()
 
 cfgd.analysis_path = loader.folder_path(cfgd_dict)
 cfgd.model_path = cfgd.analysis_path + f'/{sweep_id}/'

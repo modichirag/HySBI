@@ -4,7 +4,7 @@ sys.path.append('../../src/')
 import sbitools, sbiplots
 import argparse
 import pickle, json
-import loader_pk, loader_pk_splits
+import loader_pk, loader_pk_splits, loader_wv
 import yaml
 
 
@@ -22,17 +22,22 @@ cfgd = sbitools.Objectify(**args)
 np.random.seed(cfgd.seed)
 
 print(cfgd_dict)
-if 'splits' in cfg_data: 
-    loader = loader_pk_splits
+#save config file in sweep folder
+if 'pk' in cfg_data:
+    if 'splits' in cfg_data: 
+        loader = loader_pk_splits
+    else:
+        loader  = loader_pk
+elif 'wv' in cfg_data:
+    loader = loader_wv
 else:
-    loader  = loader_pk
-
+    print("Loader could not be determined. Exiting")
+    sys.exit()
 #
 analysis_path = loader.folder_path(cfgd_dict)
-folder = 'tmp/'
 model_path = f'tmp/'
 
-cfgd.analysis_path = analysis_path + folder
+cfgd.analysis_path = folder
 cfgm.model_path = cfgd.analysis_path + model_path
 os.makedirs(cfgm.model_path, exist_ok=True)
 
@@ -40,7 +45,7 @@ print("\nWorking directory : ", cfgm.model_path)
 os.system(f'cp {cfg_data} {cfgd.analysis_path}/{cfg_data}')  
 
 #############
-kdata, features, params = loader.loader(cfgd, return_k=True)
+features, params = loader.loader(cfgd)
 print("features and params shapes : ", features.shape, params.shape)
 data, posterior, inference, summary = sbitools.analysis(cfgd, cfgm, features, params)
 

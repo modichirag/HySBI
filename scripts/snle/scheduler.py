@@ -3,7 +3,7 @@ import sys, os
 import wandb
 from ruamel import yaml
 sys.path.append('../../src/')
-import loader_pk, loader_pk_splits
+import loader_pk, loader_pk_splits, loader_wv
 wandb.login()
 
 config_data = sys.argv[1]
@@ -18,10 +18,18 @@ cfgd['sweep'] = {'id' : sweep_id}
 nmodels = 1
 
 #save config file in sweep folder
-if 'splits' in config_data: 
-    loader = loader_pk_splits
+#save config file in sweep folder
+if 'pk' in config_data:
+    if 'splits' in config_data: 
+        loader = loader_pk_splits
+    else:
+        loader  = loader_pk
+elif 'wv' in config_data:
+    loader = loader_wv
 else:
-    loader  = loader_pk
+    print("Loader could not be determined. Exiting")
+    sys.exit()
+
 analysis_path = loader.folder_path(cfgd)
 model_path = f'{analysis_path}/{sweep_id}/'
 config_path = f'{model_path}/sweep_config.yaml'
