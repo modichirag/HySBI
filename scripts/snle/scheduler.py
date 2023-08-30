@@ -3,7 +3,7 @@ import sys, os
 import wandb
 from ruamel import yaml
 sys.path.append('../../src/')
-import loader_pk, loader_pk_splits, loader_wv
+import loader_pk, loader_pk_splits, loader_wv, loader_wv_splits
 wandb.login()
 
 config_data = sys.argv[1]
@@ -25,7 +25,10 @@ if 'pk' in config_data:
     else:
         loader  = loader_pk
 elif 'wv' in config_data:
-    loader = loader_wv
+    if 'splits' in config_data: 
+        loader = loader_wv_splits
+    else:
+        loader  = loader_wv
 else:
     print("Loader could not be determined. Exiting")
     sys.exit()

@@ -3,7 +3,7 @@ import numpy as np
 import sys, os
 sys.path.append('../../src/')
 import sbitools
-import loader_pk, loader_pk_splits, loader_wv
+import loader_pk, loader_pk_splits, loader_wv, loader_wv_splits
 import wandb
 import yaml
 
@@ -28,7 +28,10 @@ if summary == 'pk':
     else:
         loader  = loader_pk
 elif summary == 'wavelets':
-    loader = loader_wv
+    if 'splits' in config_data: 
+        loader = loader_wv_splits
+    else:
+        loader  = loader_wv
 else:
     print("Loader could not be determined. Exiting")
     sys.exit()
