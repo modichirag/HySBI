@@ -1,0 +1,24 @@
+datacuts:
+  M : 2
+  J : 2
+  Q : 4
+  kc : 0.67
+  e : 0.1
+  logit : True
+  standardize : True
+  s1only : False
+  ksplit: 0.15
+  kmin: 0.001
+  splits: 2
+  nsubs: 8
+  standardize_cond: True
+  logit_cond: False
+  meanf : True
+  
+analysis:
+  seed: 0
+  train_fraction: 0.85
+  validation_fraction: 0.06
+  alg: hybrid
+  prior_offset: 0.2
+  suffix: ""
