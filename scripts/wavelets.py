@@ -17,13 +17,13 @@ kN = N *kF / 2
 print("kF, kmax, kN : ", kF, kmax, kN)
 
 J = 7
-Q = 2
+Q = 4
 moments = [1/2, 1, 1.5, 2]
 M = len(moments)
-kcpifac = 1.
+kcpifac = 2/3.
 kc = kcpifac * np.pi # Cutoff frequency of the mother wavelet (in units of 2 px^-1)
 erosion_threshold = 0.1
-fname = f"M{M}_J{J}_Q{Q}_e{erosion_threshold}_kc{kcpifac}"
+fname = f"M{M}_J{J}_Q{Q}_e{erosion_threshold}_kc{kcpifac:0.2f}"
 save_path = f'/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/'
 print(f"File name : {fname}")
 
