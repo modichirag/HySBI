@@ -5,13 +5,14 @@ import argparse
 
 sys.path.append('../../src/')
 import sbitools
-import loader_pk, loader_pk_splits
+import loader_pk, loader_pk_splits, loader_wv, loader_wv_splits
 
 import emcee, zeus
 import torch
 
 parser = argparse.ArgumentParser(description='Arguments for simulations to run')
 parser.add_argument('--isim', type=int, help='Simulation number to run')
+parser.add_argument('--summary', type=str, help='either of pk or wavelets')
 parser.add_argument('--testsims', default=False, action='store_true')
 parser.add_argument('--no-testsims', dest='testsims', action='store_false')
 parser.add_argument('--cfgfolder', type=str, help='folder of the sweep')
@@ -61,16 +62,28 @@ sweepdict = sbitools.setup_sweepdict(cfg_path)
 cfg = sweepdict['cfg']
 
 print(f"Run analysis for LH {isim}")
-#features, params = loader_pk.loader(sweepdict['cfg'], dk=dk)
-#x = features[isim].reshape(1, -1)
-if args.subdata:
-    k, pk, _ = loader_pk_splits.lh_features(cfg)
+if args.summary == 'pk':
+    if args.subdata:
+        k, pk, _ = loader_pk_splits.lh_features(cfg)
+    else:
+        k, pk, _ = loader_pk.lh_features(cfg, dk=args.dk)
+    pk = pk[isim]
+    idx = (k > cfg.kmin) & (k < cfg.kmax)
+    k, pk = k[idx], pk[idx]
+    x = pk.reshape(1, -1) 
+elif args.summary == 'wavelets':
+    if args.subdata:
+        wv = loader_wv_splits.lh_features(cfg)
+    else:
+        wv = loader_wv.lh_features(cfg)
+    print("wv shape : ", wv.shape)
+    x = wv[isim].reshape(1, -1)
+    print("wv x shape : ", x.shape)
+    
 else:
-    k, pk, _ = loader_pk.lh_features(cfg, dk=args.dk)
-pk = pk[isim]
-idx = (k > cfg.kmin) & (k < cfg.kmax)
-k, pk = k[idx], pk[idx]
-x = pk.reshape(1, -1) 
+    print("Loader could not be determined. Exiting")
+    sys.exit()
+
 if sweepdict['scaler'] is not None:
     x = sbitools.standardize(x, scaler=sweepdict['scaler'], log_transform=sweepdict['cfg'].logit)[0]
 print("Data shape : ", x.shape)

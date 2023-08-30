@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -p gpu
 #SBATCH -C a100-40gb
-#SBATCH --time=1:00:00
+#SBATCH --time=2:00:00
 #SBATCH -N 1
 #SBATCH --gpus=1
 #SBATCH --job-name=pt
@@ -26,7 +26,7 @@ echo $i0 $i1
 for((i=${i0} ; i<=${i1} ; i+=1))
 do
     echo $i    
-    time python -u sampler_pt.py $i 1  0.1
+    time python -u sampler_pt.py --isim $i  --testsims --kmax 0.15 --varycov
 done    
 
 # wait
