@@ -7,13 +7,17 @@ import pickle
 
 #####
 
-def lh_features(args, verbose=True):
-    s1 = np.load('/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s1_M4_J7_Q4_e0.1_kc0.67.npy')
-    s0 = np.load('/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s0_M4_J7_Q4_e0.1_kc0.67.npy')
+def lh_features(args, verbose=True, erdata=False):
+    if erdata:
+        s1 = np.load(f'/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s1_M4_J7_Q4_e{args.e}_kc{args.kc:0.2f}.npy')
+        s0 = np.load(f'/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s0_M4_J7_Q4_e{args.e}_kc{args.kc:0.2f}.npy')
+    else:
+        s1 = np.load(f'/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s1_M4_J7_Q4_kc{args.kc:0.2f}.npy')
+        s0 = np.load(f'/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s0_M4_J7_Q4_kc{args.kc:0.2f}.npy')
     assert len(s0.shape) == 2
     assert len(s1.shape) == 4
-    s1 = s1[:, :args.M+1, :args.J+1].reshape(s1.shape[0], -1)
-    s0 = s0[:, :args.M+1].reshape(s0.shape[0], -1)
+    s1 = s1[:, :args.M, :args.J].reshape(s1.shape[0], -1)
+    s0 = s0[:, :args.M].reshape(s0.shape[0], -1)
     if args.s1only:
         features = s1.copy()
     else:
@@ -31,14 +35,14 @@ def cosmolh_params():
 
 
 
-def loader(args):
+def loader(args, erdata=False):
     """
     Data:
     power spectrum multipoles and ngals
     Offset multipoles with a random constant amplitude scaled with offset_amp.
     """
     
-    features = lh_features(args)
+    features = lh_features(args, erdata=erdata)
     params = cosmolh_params()                    
     return features, params
 

@@ -32,8 +32,8 @@ def lh_features(args, seed=99, verbose=True):
     assert len(s1.shape) == 5
     n_lh, n_reps = s0.shape[0], s0.shape[1]
     print("Loaded shapes of s0 and s1 : ", s0.shape, s1.shape)
-    s1 = s1[:, :, :args.M+1, :args.J+1].reshape(n_lh, n_reps, -1)
-    s0 = s0[:, :, :args.M+1]
+    s1 = s1[:, :, :args.M, :args.J].reshape(n_lh, n_reps, -1)
+    s0 = s0[:, :, :args.M]
     print("Shapes of s0 and s1 after M and J cuts: ", s0.shape, s1.shape)
     if args.s1only:
         features = s1.copy()

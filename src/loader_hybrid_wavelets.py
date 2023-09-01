@@ -15,10 +15,15 @@ def k_cuts(args, pk, k=None, verbose=True):
 
 
 
-def lh_features(args, seed=99, verbose=True):
-    if args.splits > 1:
-        s1 = np.load(f'/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s1_M4_J7_Q4_e0.1_kc0.67_split{args.splits}.npy')
-        s0 = np.load(f'/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s0_M4_J7_Q4_e0.1_kc0.67_split{args.splits}.npy')
+def lh_features(args, seed=99, verbose=True, erwavelets_full=False):
+    if (args.splits == 1) or erwavelets_full:
+        s1 = np.load(f'/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s1_M4_J7_Q4_e{args.e}_kc{args.kc:0.2f}.npy')
+        s0 = np.load(f'/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s0_M4_J7_Q4_e{args.e}_kc{args.kc:0.2f}.npy')
+        s0, s1 = np.expand_dims(s0, axis=1), np.expand_dims(s1, axis=1)
+
+    else:
+        s1 = np.load(f'/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s1_M4_J7_Q4_e{args.e}_kc{args.kc}_split{args.splits}.npy')
+        s0 = np.load(f'/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s0_M4_J7_Q4_e{args.e}_kc{args.kc}_split{args.splits}.npy')
         if args.nsubs == 1:
             s0, s1 = s0[:, :1], s1[:, :1]
         else:
@@ -34,17 +39,12 @@ def lh_features(args, seed=99, verbose=True):
                     s1_n.append(s1[i][idx])
             s0, s1 = np.array(s0_n), np.array(s1_n)
 
-    else :
-        s1 = np.load('/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s1_M4_J7_Q4_e0.1_kc0.67.npy')
-        s0 = np.load('/mnt/ceph/users/cmodi/Quijote/latin_hypercube_HR/matter/N0256/s0_M4_J7_Q4_e0.1_kc0.67.npy')
-        s0, s1 = np.expand_dims(s0, axis=1), np.expand_dims(s1, axis=1)
-
     assert len(s0.shape) == 3
     assert len(s1.shape) == 5
     n_lh, n_reps = s0.shape[0], s0.shape[1]
     print("Loaded shapes of s0 and s1 : ", s0.shape, s1.shape)
-    s1 = s1[:, :, :args.M+1, :args.J+1].reshape(n_lh, n_reps, -1)
-    s0 = s0[:, :, :args.M+1]
+    s1 = s1[:, :, :args.M, :args.J].reshape(n_lh, n_reps, -1)
+    s0 = s0[:, :, :args.M]
     print("Shapes of s0 and s1 after M and J cuts: ", s0.shape, s1.shape)
     if args.s1only:
         features = s1.copy()
@@ -85,11 +85,11 @@ def cosmolh_params():
     return cosmo_params
 
 
-def loader(args):
+def loader(args, erwavelets_full=False):
     """
     Data:
     """
-    features = lh_features(args)
+    features = lh_features(args, erwavelets_full=erwavelets_full)
     k_cond, conditioning = pkcond(args)
     params = cosmolh_params()
     params = np.concatenate([params, conditioning], axis=-1)
@@ -97,7 +97,6 @@ def loader(args):
     nsubs = args.nsubs
     if  (args.splits == 1) or args.meanf: nsubs = 1
     params = np.repeat(params, nsubs, axis=0).reshape(-1, nsubs, params.shape[-1])    
-
                     
     return features, params
 
